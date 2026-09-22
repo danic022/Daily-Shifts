@@ -2,37 +2,50 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Area Operations Roster - Google Sheets Synced</title>
+  <title>MKDPI Daily Lineup - Operations Roster</title>
   <style>
     :root {
-      --bg: #090e17;
-      --surface: #121c2c;
-      --surface-subtle: #172437;
-      --border: #22344d;
-      --accent: #38bdf8;
-      --accent-badge: rgba(56, 189, 248, 0.15);
-      --coord-color: #38bdf8;
-      --lead-color: #f59e0b;
-      --lead-badge: rgba(245, 158, 11, 0.15);
-      --event-color: #c084fc;
-      --event-badge: rgba(192, 132, 252, 0.15);
+      /* Brand Palette Mapping */
+      --brand-lime-light: #c2e76b;  /* RGB 194 231 107 */
+      --brand-lime-green: #8dc63f;  /* RGB 141 198 63 */
+      --brand-cyan:       #00a6ce;  /* RGB 0 166 206 */
+      --brand-deep-blue:  #134d88;  /* RGB 19 77 136 */
+      --brand-slate-dark: #455560;  /* RGB 69 85 96 */
+
+      /* UI Theme Tokens */
+      --bg-dark: #0c1824;
+      --surface: #172736;
+      --surface-subtle: #213547;
+      --border: #2d455c;
+      --border-light: rgba(69, 85, 96, 0.4);
+
+      /* Role Badges */
+      --coord-color: var(--brand-cyan);
+      --coord-badge-bg: rgba(0, 166, 206, 0.16);
+
+      --lead-color: var(--brand-lime-green);
+      --lead-badge-bg: rgba(141, 198, 63, 0.16);
+
+      --event-color: var(--brand-lime-light);
+      --event-badge-bg: rgba(194, 231, 107, 0.18);
+
       --danger-color: #ef4444;
-      --text: #f8fafc;
-      --subtext: #94a3b8;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 
     body {
-      background: var(--bg);
-      color: var(--text);
+      background: radial-gradient(circle at 50% 10%, #152e46 0%, var(--bg-dark) 80%);
+      color: var(--text-main);
       width: 1080px;
       height: 1920px;
       overflow: hidden;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      padding: 60px 48px 50px;
+      padding: 55px 48px 45px;
       position: relative;
     }
 
@@ -44,22 +57,42 @@
       gap: 12px;
       text-align: center;
     }
-    .day-pill {
-      font-size: 1.4rem;
-      font-weight: 800;
-      letter-spacing: 0.12em;
+    .brand-title {
+      font-size: 2.3rem;
+      font-weight: 900;
+      letter-spacing: 0.18em;
       text-transform: uppercase;
-      color: var(--accent);
-      border: 2px solid var(--accent);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+    .brand-title::before,
+    .brand-title::after {
+      content: "";
+      width: 52px;
+      height: 4px;
+      background: var(--brand-lime-light);
+      border-radius: 999px;
+    }
+    .day-pill {
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--brand-lime-light);
+      border: 2px solid var(--brand-lime-light);
       padding: 6px 26px;
       border-radius: 999px;
-      background: var(--accent-badge);
+      background: rgba(194, 231, 107, 0.12);
     }
     .area-title {
-      font-size: 4.2rem;
+      font-size: 4.1rem;
       font-weight: 900;
       text-transform: uppercase;
       letter-spacing: 0.03em;
+      line-height: 1.1;
+      color: #ffffff;
     }
 
     /* Content Stage */
@@ -68,7 +101,7 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
-      gap: 26px;
+      gap: 24px;
       width: 100%;
       padding: 10px 0;
       transition: opacity 0.3s ease, transform 0.3s ease;
@@ -129,31 +162,31 @@
       flex-direction: column;
       align-items: center;
       text-align: center;
-      box-shadow: 0 10px 24px rgba(0,0,0,0.4);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.45);
     }
     .slot-badge {
-      font-size: 1.2rem;
+      font-size: 1.25rem;
       font-weight: 900;
       letter-spacing: 0.05em;
       text-transform: uppercase;
-      padding: 5px 16px;
+      padding: 6px 18px;
       border-radius: 999px;
       margin-bottom: 14px;
     }
     .slot-badge.coord {
       color: var(--coord-color);
-      background: var(--accent-badge);
-      border: 1px solid var(--coord-color);
+      background: var(--coord-badge-bg);
+      border: 1.5px solid var(--coord-color);
     }
     .slot-badge.leader {
       color: var(--lead-color);
-      background: var(--lead-badge);
-      border: 1px solid var(--lead-color);
+      background: var(--lead-badge-bg);
+      border: 1.5px solid var(--lead-color);
     }
     .slot-badge.event {
       color: var(--event-color);
-      background: var(--event-badge);
-      border: 1px solid var(--event-color);
+      background: var(--event-badge-bg);
+      border: 1.5px solid var(--event-color);
     }
     .slot-avatar {
       width: 125px;
@@ -162,7 +195,7 @@
       object-fit: cover;
       margin-bottom: 12px;
       border: 4px solid var(--border);
-      background: #1e293b;
+      background: var(--brand-slate-dark);
     }
     .slot-name {
       font-size: 1.55rem;
@@ -174,7 +207,7 @@
       justify-content: center;
     }
     .slot-name.unassigned {
-      color: var(--subtext);
+      color: var(--text-muted);
       font-size: 1.2rem;
       font-weight: 600;
       font-style: italic;
@@ -200,18 +233,18 @@
       text-transform: uppercase;
       background: var(--surface);
       border: 2px solid var(--border);
-      color: var(--subtext);
+      color: var(--text-muted);
       border-radius: 12px;
     }
     .area-pill.active {
-      background: var(--accent);
-      color: #090e17;
-      border-color: var(--accent);
-      box-shadow: 0 0 18px rgba(56, 189, 248, 0.4);
+      background: var(--brand-deep-blue);
+      color: #ffffff;
+      border-color: var(--brand-cyan);
+      box-shadow: 0 0 20px rgba(0, 166, 206, 0.45);
     }
     .progress-bar-wrap {
       width: 100%;
-      height: 7px;
+      height: 8px;
       background: var(--border);
       border-radius: 999px;
       overflow: hidden;
@@ -219,7 +252,7 @@
     .progress-bar {
       height: 100%;
       width: 0%;
-      background: var(--accent);
+      background: linear-gradient(90deg, var(--brand-cyan), var(--brand-lime-green));
       transition: width 0.1s linear;
     }
 
@@ -230,7 +263,7 @@
       right: 40px;
       background: rgba(255, 255, 255, 0.08);
       border: 1px solid rgba(255, 255, 255, 0.15);
-      color: var(--subtext);
+      color: var(--text-muted);
       font-size: 1.2rem;
       padding: 10px 20px;
       border-radius: 12px;
@@ -243,7 +276,7 @@
       display: none;
       position: absolute;
       inset: 0;
-      background: rgba(9, 14, 23, 0.97);
+      background: rgba(12, 24, 36, 0.97);
       z-index: 50;
       flex-direction: column;
       align-items: center;
@@ -276,7 +309,7 @@
       padding: 12px 24px;
       font-size: 1.3rem;
       font-weight: 800;
-      color: var(--subtext);
+      color: var(--text-muted);
       background: transparent;
       border: 2px solid transparent;
       border-radius: 12px;
@@ -284,8 +317,8 @@
     }
     .tab-btn.active {
       background: var(--surface-subtle);
-      color: var(--accent);
-      border-color: var(--accent);
+      color: var(--brand-cyan);
+      border-color: var(--brand-cyan);
     }
 
     .tab-content { display: none; flex-direction: column; gap: 20px; }
@@ -299,11 +332,11 @@
       font-size: 1.05rem;
       font-weight: 700;
       background: var(--border);
-      color: var(--subtext);
+      color: var(--text-muted);
       border-radius: 10px;
       cursor: pointer;
     }
-    .pill-btn.active { background: var(--accent); color: #090e17; }
+    .pill-btn.active { background: var(--brand-cyan); color: #0c1824; }
     
     .assignment-row {
       display: grid;
@@ -317,8 +350,8 @@
     }
     .assignment-label { font-size: 1.25rem; font-weight: 800; }
     .assignment-select {
-      background: #090e17;
-      color: var(--text);
+      background: var(--bg-dark);
+      color: var(--text-main);
       border: 1px solid var(--border);
       padding: 10px 14px;
       font-size: 1.2rem;
@@ -354,8 +387,8 @@
       border: 1px solid var(--border);
     }
     .roster-input {
-      background: #090e17;
-      color: var(--text);
+      background: var(--bg-dark);
+      color: var(--text-main);
       border: 1px solid var(--border);
       padding: 8px 12px;
       font-size: 1.1rem;
@@ -379,7 +412,7 @@
       display: grid;
       grid-template-columns: 1fr 1fr 120px;
       gap: 10px;
-      background: #090e17;
+      background: var(--bg-dark);
       padding: 12px;
       border-radius: 12px;
       border: 2px dashed var(--border);
@@ -396,10 +429,10 @@
       border: none;
       cursor: pointer;
     }
-    .btn-save { background: var(--accent); color: #090e17; }
+    .btn-save { background: var(--brand-lime-green); color: #0c1824; }
     .btn-save:disabled { opacity: 0.6; cursor: wait; }
-    .btn-add { background: #22c55e; color: #090e17; padding: 10px; border-radius: 8px; font-weight: 800; font-size: 1.05rem; border: none; cursor: pointer; }
-    .btn-close { background: var(--border); color: var(--text); }
+    .btn-add { background: var(--brand-lime-green); color: #0c1824; padding: 10px; border-radius: 8px; font-weight: 800; font-size: 1.05rem; border: none; cursor: pointer; }
+    .btn-close { background: var(--border); color: var(--text-main); }
   </style>
 </head>
 <body>
@@ -407,6 +440,7 @@
   <button class="admin-btn" id="openSetup">⚙ Shift Setup</button>
 
   <div class="header">
+    <div class="brand-title">MKDPI Daily Lineup</div>
     <div class="day-pill" id="dayPill">Loading...</div>
     <div class="area-title" id="areaTitle">Area</div>
   </div>
@@ -437,7 +471,7 @@
       <!-- Tab 1: Scheduling -->
       <div class="tab-content active" id="tab-schedule">
         <div>
-          <label style="font-size:1.05rem; color:var(--subtext); margin-bottom:6px; display:block;">1. Select Day</label>
+          <label style="font-size:1.05rem; color:var(--text-muted); margin-bottom:6px; display:block;">1. Select Day</label>
           <div class="pill-row" id="setupDays">
             <div class="pill-btn" data-day="Sunday">Sun</div>
             <div class="pill-btn" data-day="Monday">Mon</div>
@@ -450,7 +484,7 @@
         </div>
 
         <div>
-          <label style="font-size:1.05rem; color:var(--subtext); margin-bottom:6px; display:block;">2. Select Area</label>
+          <label style="font-size:1.05rem; color:var(--text-muted); margin-bottom:6px; display:block;">2. Select Area</label>
           <div class="area-row" id="setupAreas">
             <div class="pill-btn" data-area="50 Area">50 Area</div>
             <div class="pill-btn" data-area="60 Area">60 Area</div>
@@ -508,7 +542,7 @@
     const AREAS = ["50 Area", "60 Area", "80 Area", "Base", "Deployment"];
     const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
     const ROTATION_MS = 8500;
-    const STORAGE_BACKUP_KEY = "area_roster_local_backup_v9";
+    const STORAGE_BACKUP_KEY = "area_roster_local_backup_v12";
 
     // 1. Default Coordinators Database
     const DEFAULT_COORDINATORS = [
@@ -533,7 +567,7 @@
     let COORDINATORS_ROSTER = [];
     let LEADERS_ROSTER = [];
 
-    // Area Configuration defining which slot pulls from which database
+    // Area Configuration
     const AREA_CONFIG = {
       "50 Area": {
         coordinators: ["50 AM", "50 PM", "51"],
@@ -564,6 +598,9 @@
       }
     };
 
+    // Linked leader positions across 60 and 80 Areas
+    const LINKED_LEADER_SLOTS = ["8 AM", "8 MID", "8 PM"];
+
     let schedule = {};
     let currentAreaIndex = 0;
     let slideTimer = null;
@@ -579,7 +616,7 @@
         schedule[day] = {
           "50 Area": { "50 AM": "c1", "50 PM": "c2", "51": "c4", "5 AM": "l1", "5 MID": "l2", "5 PM": "l3" },
           "60 Area": { "60 AM": "c2", "60 PM": "c3", "61": "c4", "CYM": "c5", "8 AM": "l2", "8 MID": "l3", "8 PM": "l4" },
-          "80 Area": { "80 AM": "c4", "80 PM": "c1", "81": "c3", "8 AM": "l3", "8 MID": "l4", "8 PM": "l5" },
+          "80 Area": { "80 AM": "c4", "80 PM": "c1", "81": "c3", "8 AM": "l2", "8 MID": "l3", "8 PM": "l4" },
           "Base": { "Base AM 1": "c1", "Base AM 2": "c2", "Base MID 1": "c3", "Base MID 2": "c4", "Base PM": "c5", "Base Lead AM": "l5", "Base Lead PM": "l6" },
           "Deployment": { 
             "Deploy AM": "c6", 
@@ -602,15 +639,28 @@
           COORDINATORS_ROSTER = data.coords;
           LEADERS_ROSTER = data.leads;
           schedule = data.schedule;
-          // Store local fallback
+
+          DAYS.forEach(day => {
+            if (schedule[day]) {
+              const a60 = schedule[day]["60 Area"] || {};
+              const a80 = schedule[day]["80 Area"] || {};
+              LINKED_LEADER_SLOTS.forEach(slot => {
+                const val = a60[slot] || a80[slot] || "";
+                if (!schedule[day]["60 Area"]) schedule[day]["60 Area"] = {};
+                if (!schedule[day]["80 Area"]) schedule[day]["80 Area"] = {};
+                schedule[day]["60 Area"][slot] = val;
+                schedule[day]["80 Area"][slot] = val;
+              });
+            }
+          });
+
           localStorage.setItem(STORAGE_BACKUP_KEY, JSON.stringify(data));
           return;
         }
       } catch (err) {
-        console.warn("Could not reach Google Sheets, checking local storage backup...", err);
+        console.warn("Could not reach Google Sheets, checking local backup...", err);
       }
 
-      // Check local storage backup if Google Sheets was unreachable or empty
       const localBackup = localStorage.getItem(STORAGE_BACKUP_KEY);
       if (localBackup) {
         const data = JSON.parse(localBackup);
@@ -618,7 +668,6 @@
         LEADERS_ROSTER = data.leads || [...DEFAULT_LEADERS];
         schedule = data.schedule || {};
       } else {
-        // First run seed
         COORDINATORS_ROSTER = [...DEFAULT_COORDINATORS];
         LEADERS_ROSTER = [...DEFAULT_LEADERS];
         seedDefaultSchedule();
@@ -632,7 +681,6 @@
         schedule: schedule
       };
 
-      // Always save local backup
       localStorage.setItem(STORAGE_BACKUP_KEY, JSON.stringify(payload));
 
       const saveBtn = document.getElementById("saveSetupBtn");
@@ -654,7 +702,7 @@
         }, 600);
       } catch (err) {
         console.error("Save to Google Sheet failed:", err);
-        alert("Saved to local backup, but could not reach Google Sheet. Check internet connection.");
+        alert("Saved locally, but could not update Google Sheet. Please check internet connection.");
         saveBtn.disabled = false;
         saveBtn.textContent = "Save & Apply Changes";
         document.getElementById("setupModal").classList.remove("open");
@@ -788,7 +836,7 @@
       const config = AREA_CONFIG[setupSelectedArea];
       const dayAreaAssignments = (schedule[setupSelectedDay] && schedule[setupSelectedDay][setupSelectedArea]) || {};
 
-      function buildSlotRows(slots, pool, labelColor) {
+      function buildSlotRows(slots, pool, labelColor, isLinkedLeaders = false) {
         return slots.map(normalizeSlot).map(item => {
           const currentVal = dayAreaAssignments[item.key] || "";
           const options = [`<option value="">-- Unassigned --</option>`].concat(
@@ -797,8 +845,10 @@
 
           return `
             <div class="assignment-row">
-              <div class="assignment-label" style="color:${labelColor};">${item.label}</div>
-              <select class="assignment-select" data-slot="${item.key}">${options}</select>
+              <div class="assignment-label" style="color:${labelColor};">
+                ${item.label}
+              </div>
+              <select class="assignment-select" data-slot="${item.key}" data-linked="${isLinkedLeaders}">${options}</select>
             </div>
           `;
         }).join("");
@@ -810,8 +860,13 @@
         modalHTML += buildSlotRows(config.coordinators, COORDINATORS_ROSTER, "var(--coord-color)");
       }
       if (config.leaders && config.leaders.length) {
-        modalHTML += `<div style="font-size:1.3rem; font-weight:800; color:var(--lead-color); margin-top:8px;">Leaders</div>`;
-        modalHTML += buildSlotRows(config.leaders, LEADERS_ROSTER, "var(--lead-color)");
+        const isLinked = (setupSelectedArea === "60 Area" || setupSelectedArea === "80 Area");
+        const linkedNote = isLinked 
+          ? `<span style="font-size: 0.85rem; font-weight: 700; color: #0c1824; background: var(--lead-color); padding: 3px 10px; border-radius: 999px; margin-left: 10px;">Linked with ${setupSelectedArea === "60 Area" ? "80 Area" : "60 Area"}</span>`
+          : "";
+
+        modalHTML += `<div style="font-size:1.3rem; font-weight:800; color:var(--lead-color); margin-top:8px; display:flex; align-items:center;">Leaders ${linkedNote}</div>`;
+        modalHTML += buildSlotRows(config.leaders, LEADERS_ROSTER, "var(--lead-color)", isLinked);
       }
       if (config.optionalEvents && config.optionalEvents.length) {
         modalHTML += `<div style="font-size:1.3rem; font-weight:800; color:var(--event-color); margin-top:8px;">Optional Event Coverage</div>`;
@@ -823,6 +878,20 @@
       }
 
       container.innerHTML = modalHTML;
+
+      container.querySelectorAll("select[data-linked='true']").forEach(sel => {
+        sel.addEventListener("change", (e) => {
+          const slotKey = e.target.dataset.slot;
+          const selectedVal = e.target.value;
+          
+          if (!schedule[setupSelectedDay]) schedule[setupSelectedDay] = {};
+          if (!schedule[setupSelectedDay]["60 Area"]) schedule[setupSelectedDay]["60 Area"] = {};
+          if (!schedule[setupSelectedDay]["80 Area"]) schedule[setupSelectedDay]["80 Area"] = {};
+
+          schedule[setupSelectedDay]["60 Area"][slotKey] = selectedVal;
+          schedule[setupSelectedDay]["80 Area"][slotKey] = selectedVal;
+        });
+      });
     }
 
     function renderRosterLists() {
@@ -952,7 +1021,16 @@
 
       const selects = document.querySelectorAll("#setupSlotsContainer select");
       selects.forEach(sel => {
-        schedule[setupSelectedDay][setupSelectedArea][sel.dataset.slot] = sel.value;
+        const slotKey = sel.dataset.slot;
+        const val = sel.value;
+        schedule[setupSelectedDay][setupSelectedArea][slotKey] = val;
+
+        if (LINKED_LEADER_SLOTS.includes(slotKey)) {
+          if (!schedule[setupSelectedDay]["60 Area"]) schedule[setupSelectedDay]["60 Area"] = {};
+          if (!schedule[setupSelectedDay]["80 Area"]) schedule[setupSelectedDay]["80 Area"] = {};
+          schedule[setupSelectedDay]["60 Area"][slotKey] = val;
+          schedule[setupSelectedDay]["80 Area"][slotKey] = val;
+        }
       });
 
       saveAllData();
