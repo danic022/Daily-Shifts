@@ -372,19 +372,27 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
-      max-height: 240px;
+      max-height: 250px;
       overflow-y: auto;
       margin-top: 10px;
     }
     .roster-row {
       display: grid;
-      grid-template-columns: 1fr 1fr 50px;
-      gap: 10px;
+      grid-template-columns: 50px 1fr 140px 45px;
+      gap: 12px;
       align-items: center;
       background: var(--surface-subtle);
       padding: 8px 12px;
       border-radius: 10px;
       border: 1px solid var(--border);
+    }
+    .row-thumb {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--border);
+      background: #090e17;
     }
     .roster-input {
       background: var(--bg-dark);
@@ -394,6 +402,22 @@
       font-size: 1.1rem;
       border-radius: 8px;
       width: 100%;
+    }
+    .upload-btn-label {
+      background: var(--brand-slate-dark);
+      color: #ffffff;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      text-align: center;
+      cursor: pointer;
+      display: inline-block;
+      white-space: nowrap;
+      border: 1px solid var(--border);
+    }
+    .upload-btn-label:hover {
+      background: var(--brand-deep-blue);
     }
     .roster-delete-btn {
       background: rgba(239, 68, 68, 0.15);
@@ -410,8 +434,8 @@
     }
     .add-roster-box {
       display: grid;
-      grid-template-columns: 1fr 1fr 120px;
-      gap: 10px;
+      grid-template-columns: 50px 1fr 140px 130px;
+      gap: 12px;
       background: var(--bg-dark);
       padding: 12px;
       border-radius: 12px;
@@ -460,7 +484,7 @@
     </div>
   </div>
 
-  <!-- Setup Modal with Separated Databases -->
+  <!-- Setup Modal with Separated Databases & Photo Uploader -->
   <div class="modal" id="setupModal">
     <div class="modal-card">
       <div class="modal-nav-tabs">
@@ -497,7 +521,7 @@
         <div id="setupSlotsContainer" style="display:flex; flex-direction:column; gap:12px;"></div>
       </div>
 
-      <!-- Tab 2: Separate Databases for Coordinators and Leaders -->
+      <!-- Tab 2: Separate Databases with Photo Uploader -->
       <div class="tab-content" id="tab-roster">
         
         <!-- Database 1: Coordinators -->
@@ -506,8 +530,12 @@
             <span>🔷 Coordinators Database</span>
           </div>
           <div class="add-roster-box">
+            <img id="newCoordPreview" class="row-thumb" src="">
             <input type="text" class="roster-input" id="newCoordName" placeholder="Coordinator Name">
-            <input type="text" class="roster-input" id="newCoordPhoto" placeholder="Photo (e.g. photos/name.jpg)">
+            <label class="upload-btn-label">
+              📷 Upload Photo
+              <input type="file" id="newCoordFile" accept="image/*" style="display:none;">
+            </label>
             <button class="btn-add" id="addCoordBtn">+ Add Coord</button>
           </div>
           <div class="roster-table" id="coordList"></div>
@@ -519,8 +547,12 @@
             <span>🔶 Leaders Database</span>
           </div>
           <div class="add-roster-box">
+            <img id="newLeadPreview" class="row-thumb" src="">
             <input type="text" class="roster-input" id="newLeadName" placeholder="Leader Name">
-            <input type="text" class="roster-input" id="newLeadPhoto" placeholder="Photo (e.g. photos/name.jpg)">
+            <label class="upload-btn-label">
+              📷 Upload Photo
+              <input type="file" id="newLeadFile" accept="image/*" style="display:none;">
+            </label>
             <button class="btn-add" id="addLeadBtn" style="background:var(--lead-color);">+ Add Leader</button>
           </div>
           <div class="roster-table" id="leadList"></div>
@@ -542,30 +574,37 @@
     const AREAS = ["50 Area", "60 Area", "80 Area", "Base", "Deployment"];
     const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
     const ROTATION_MS = 8500;
-    const STORAGE_BACKUP_KEY = "area_roster_local_backup_v12";
+    const STORAGE_BACKUP_KEY = "area_roster_local_backup_v13";
+
+    // Clean Default SVG Avatar Placeholder
+    const DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='%2394a3b8'><circle cx='50' cy='36' r='20'/><path d='M50 62c-22 0-36 12-36 24v4h72v-4c0-12-14-24-36-24z'/></svg>";
 
     // 1. Default Coordinators Database
     const DEFAULT_COORDINATORS = [
-      { id: "c1", name: "Alex Rivera", photo: "photos/alex.jpg" },
-      { id: "c2", name: "Jordan Lee", photo: "photos/jordan.jpg" },
-      { id: "c3", name: "Morgan Smith", photo: "photos/morgan.jpg" },
-      { id: "c4", name: "Taylor Reed", photo: "photos/taylor.jpg" },
-      { id: "c5", name: "Casey Miller", photo: "photos/casey.jpg" },
-      { id: "c6", name: "Dakota Hayes", photo: "photos/dakota.jpg" }
+      { id: "c1", name: "Alex Rivera", photo: DEFAULT_AVATAR },
+      { id: "c2", name: "Jordan Lee", photo: DEFAULT_AVATAR },
+      { id: "c3", name: "Morgan Smith", photo: DEFAULT_AVATAR },
+      { id: "c4", name: "Taylor Reed", photo: DEFAULT_AVATAR },
+      { id: "c5", name: "Casey Miller", photo: DEFAULT_AVATAR },
+      { id: "c6", name: "Dakota Hayes", photo: DEFAULT_AVATAR }
     ];
 
     // 2. Default Leaders Database
     const DEFAULT_LEADERS = [
-      { id: "l1", name: "Chris Vance", photo: "photos/chris.jpg" },
-      { id: "l2", name: "Sam Patel", photo: "photos/sam.jpg" },
-      { id: "l3", name: "Pat Murphy", photo: "photos/pat.jpg" },
-      { id: "l4", name: "Robin Diaz", photo: "photos/robin.jpg" },
-      { id: "l5", name: "Jamie Chen", photo: "photos/jamie.jpg" },
-      { id: "l6", name: "Quinn Davis", photo: "photos/quinn.jpg" }
+      { id: "l1", name: "Chris Vance", photo: DEFAULT_AVATAR },
+      { id: "l2", name: "Sam Patel", photo: DEFAULT_AVATAR },
+      { id: "l3", name: "Pat Murphy", photo: DEFAULT_AVATAR },
+      { id: "l4", name: "Robin Diaz", photo: DEFAULT_AVATAR },
+      { id: "l5", name: "Jamie Chen", photo: DEFAULT_AVATAR },
+      { id: "l6", name: "Quinn Davis", photo: DEFAULT_AVATAR }
     ];
 
     let COORDINATORS_ROSTER = [];
     let LEADERS_ROSTER = [];
+
+    // Temporary upload buffers for newly added records
+    let tempCoordPhoto = DEFAULT_AVATAR;
+    let tempLeadPhoto = DEFAULT_AVATAR;
 
     // Area Configuration
     const AREA_CONFIG = {
@@ -598,7 +637,6 @@
       }
     };
 
-    // Linked leader positions across 60 and 80 Areas
     const LINKED_LEADER_SLOTS = ["8 AM", "8 MID", "8 PM"];
 
     let schedule = {};
@@ -609,6 +647,41 @@
 
     let setupSelectedDay = "Monday";
     let setupSelectedArea = "50 Area";
+
+    // Helper: compress uploaded images to 200x200px Base64 web-safe strings
+    function compressImageFile(file, maxWidth = 200, maxHeight = 200) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (readerEvent) => {
+          const image = new Image();
+          image.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = image.width;
+            let height = image.height;
+
+            if (width > height) {
+              if (width > maxWidth) {
+                height = Math.round((height * maxWidth) / width);
+                width = maxWidth;
+              }
+            } else {
+              if (height > maxHeight) {
+                width = Math.round((width * maxHeight) / height);
+                height = maxHeight;
+              }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(image, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', 0.82));
+          };
+          image.src = readerEvent.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
 
     function seedDefaultSchedule() {
       schedule = {};
@@ -741,7 +814,8 @@
         const person = findPerson(personId);
         const nameText = person ? person.name : "Unassigned";
         const unassignedClass = person ? "" : "unassigned";
-        const imgStyle = person ? `src="${person.photo}"` : `style="display:none;"`;
+        const photoSrc = (person && person.photo) ? person.photo : DEFAULT_AVATAR;
+        const imgStyle = person ? `src="${photoSrc}"` : `style="display:none;"`;
 
         return `
           <div class="slot-card">
@@ -895,19 +969,33 @@
     }
 
     function renderRosterLists() {
-      // 1. Coordinators
+      // Initialize previews for new staff add forms
+      document.getElementById("newCoordPreview").src = tempCoordPhoto;
+      document.getElementById("newLeadPreview").src = tempLeadPhoto;
+
+      // 1. Coordinators Roster Table
       const coordContainer = document.getElementById("coordList");
       coordContainer.innerHTML = "";
       COORDINATORS_ROSTER.forEach(person => {
         const row = document.createElement("div");
         row.className = "roster-row";
         row.innerHTML = `
+          <img class="row-thumb" src="${person.photo || DEFAULT_AVATAR}">
           <input type="text" class="roster-input name-field" value="${person.name}" placeholder="Name">
-          <input type="text" class="roster-input photo-field" value="${person.photo}" placeholder="Photo path">
+          <label class="upload-btn-label">
+            📷 Change
+            <input type="file" class="row-file-input" accept="image/*" style="display:none;">
+          </label>
           <button class="roster-delete-btn" title="Delete">✕</button>
         `;
         row.querySelector(".name-field").addEventListener("input", (e) => person.name = e.target.value);
-        row.querySelector(".photo-field").addEventListener("input", (e) => person.photo = e.target.value);
+        row.querySelector(".row-file-input").addEventListener("change", async (e) => {
+          if (e.target.files && e.target.files[0]) {
+            const base64 = await compressImageFile(e.target.files[0]);
+            person.photo = base64;
+            row.querySelector(".row-thumb").src = base64;
+          }
+        });
         row.querySelector(".roster-delete-btn").addEventListener("click", () => {
           COORDINATORS_ROSTER = COORDINATORS_ROSTER.filter(p => p.id !== person.id);
           renderRosterLists();
@@ -916,19 +1004,29 @@
         coordContainer.appendChild(row);
       });
 
-      // 2. Leaders
+      // 2. Leaders Roster Table
       const leadContainer = document.getElementById("leadList");
       leadContainer.innerHTML = "";
       LEADERS_ROSTER.forEach(person => {
         const row = document.createElement("div");
         row.className = "roster-row";
         row.innerHTML = `
+          <img class="row-thumb" src="${person.photo || DEFAULT_AVATAR}">
           <input type="text" class="roster-input name-field" value="${person.name}" placeholder="Name">
-          <input type="text" class="roster-input photo-field" value="${person.photo}" placeholder="Photo path">
+          <label class="upload-btn-label">
+            📷 Change
+            <input type="file" class="row-file-input" accept="image/*" style="display:none;">
+          </label>
           <button class="roster-delete-btn" title="Delete">✕</button>
         `;
         row.querySelector(".name-field").addEventListener("input", (e) => person.name = e.target.value);
-        row.querySelector(".photo-field").addEventListener("input", (e) => person.photo = e.target.value);
+        row.querySelector(".row-file-input").addEventListener("change", async (e) => {
+          if (e.target.files && e.target.files[0]) {
+            const base64 = await compressImageFile(e.target.files[0]);
+            person.photo = base64;
+            row.querySelector(".row-thumb").src = base64;
+          }
+        });
         row.querySelector(".roster-delete-btn").addEventListener("click", () => {
           LEADERS_ROSTER = LEADERS_ROSTER.filter(p => p.id !== person.id);
           renderRosterLists();
@@ -955,20 +1053,35 @@
       });
     });
 
+    // File selection for new Coordinator
+    document.getElementById("newCoordFile").addEventListener("change", async (e) => {
+      if (e.target.files && e.target.files[0]) {
+        tempCoordPhoto = await compressImageFile(e.target.files[0]);
+        document.getElementById("newCoordPreview").src = tempCoordPhoto;
+      }
+    });
+
+    // File selection for new Leader
+    document.getElementById("newLeadFile").addEventListener("change", async (e) => {
+      if (e.target.files && e.target.files[0]) {
+        tempLeadPhoto = await compressImageFile(e.target.files[0]);
+        document.getElementById("newLeadPreview").src = tempLeadPhoto;
+      }
+    });
+
     // Add Coordinator Handler
     document.getElementById("addCoordBtn").addEventListener("click", () => {
       const nameEl = document.getElementById("newCoordName");
-      const photoEl = document.getElementById("newCoordPhoto");
       if (!nameEl.value.trim()) return alert("Please enter a Coordinator name");
 
       COORDINATORS_ROSTER.push({
         id: "c_" + Date.now(),
         name: nameEl.value.trim(),
-        photo: photoEl.value.trim() || "photos/default.jpg"
+        photo: tempCoordPhoto
       });
 
       nameEl.value = "";
-      photoEl.value = "";
+      tempCoordPhoto = DEFAULT_AVATAR;
       renderRosterLists();
       refreshScheduleView();
     });
@@ -976,17 +1089,16 @@
     // Add Leader Handler
     document.getElementById("addLeadBtn").addEventListener("click", () => {
       const nameEl = document.getElementById("newLeadName");
-      const photoEl = document.getElementById("newLeadPhoto");
       if (!nameEl.value.trim()) return alert("Please enter a Leader name");
 
       LEADERS_ROSTER.push({
         id: "l_" + Date.now(),
         name: nameEl.value.trim(),
-        photo: photoEl.value.trim() || "photos/default.jpg"
+        photo: tempLeadPhoto
       });
 
       nameEl.value = "";
-      photoEl.value = "";
+      tempLeadPhoto = DEFAULT_AVATAR;
       renderRosterLists();
       refreshScheduleView();
     });
