@@ -234,6 +234,7 @@
       border: 2px solid var(--border);
       color: var(--text-muted);
       border-radius: 12px;
+      cursor: pointer;
     }
     .area-pill.active {
       background: var(--brand-deep-blue);
@@ -530,7 +531,7 @@
             <span>🔷 Coordinators Database</span>
           </div>
           <div class="add-roster-box">
-            <img id="newCoordPreview" class="row-thumb" src="">
+            <img id="newCoordPreview" class="row-thumb" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='%2394a3b8'><circle cx='50' cy='36' r='20'/><path d='M50 62c-22 0-36 12-36 24v4h72v-4c0-12-14-24-36-24z'/></svg>">
             <input type="text" class="roster-input" id="newCoordName" placeholder="Coordinator Name">
             <label class="upload-btn-label">
               📷 Upload Photo
@@ -547,7 +548,7 @@
             <span>🔶 Leaders Database</span>
           </div>
           <div class="add-roster-box">
-            <img id="newLeadPreview" class="row-thumb" src="">
+            <img id="newLeadPreview" class="row-thumb" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='%2394a3b8'><circle cx='50' cy='36' r='20'/><path d='M50 62c-22 0-36 12-36 24v4h72v-4c0-12-14-24-36-24z'/></svg>">
             <input type="text" class="roster-input" id="newLeadName" placeholder="Leader Name">
             <label class="upload-btn-label">
               📷 Upload Photo
@@ -569,7 +570,7 @@
 
   <script>
     // UPDATED GOOGLE SHEETS WEB APP ENDPOINT
-const GOOGLE_SHEET_API = "https://script.google.com/macros/s/.../exec";
+    const GOOGLE_SHEET_API = "https://script.google.com/macros/s/AKfycby2ZDaS3O0scUfiHhHtQHK7Gr3Mo327H55FRNPMBDLhyeKKlxgndMFziK4RVs-_l8inJg/exec";
     const AREAS = ["50 Area", "60 Area", "80 Area", "Base", "Deployment"];
     const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
     const ROTATION_MS = 8500;
@@ -578,7 +579,7 @@ const GOOGLE_SHEET_API = "https://script.google.com/macros/s/.../exec";
     // Clean Default SVG Avatar Placeholder
     const DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='%2394a3b8'><circle cx='50' cy='36' r='20'/><path d='M50 62c-22 0-36 12-36 24v4h72v-4c0-12-14-24-36-24z'/></svg>";
 
-    // 1. Default Coordinators Database
+    // Default Coordinators Database
     const DEFAULT_COORDINATORS = [
       { id: "c1", name: "Alex Rivera", photo: DEFAULT_AVATAR },
       { id: "c2", name: "Jordan Lee", photo: DEFAULT_AVATAR },
@@ -588,7 +589,7 @@ const GOOGLE_SHEET_API = "https://script.google.com/macros/s/.../exec";
       { id: "c6", name: "Dakota Hayes", photo: DEFAULT_AVATAR }
     ];
 
-    // 2. Default Leaders Database
+    // Default Leaders Database
     const DEFAULT_LEADERS = [
       { id: "l1", name: "Chris Vance", photo: DEFAULT_AVATAR },
       { id: "l2", name: "Sam Patel", photo: DEFAULT_AVATAR },
@@ -647,7 +648,7 @@ const GOOGLE_SHEET_API = "https://script.google.com/macros/s/.../exec";
     let setupSelectedDay = "Monday";
     let setupSelectedArea = "50 Area";
 
-    // Helper: compress uploaded images to 400x400 max before sending to Google Drive
+    // Helper: compress uploaded images to 400x400 max before sending to Apps Script
     function compressImageFile(file, maxWidth = 400, maxHeight = 400) {
       return new Promise((resolve) => {
         const reader = new FileReader();
@@ -682,7 +683,7 @@ const GOOGLE_SHEET_API = "https://script.google.com/macros/s/.../exec";
       });
     }
 
-    // Helper: Upload photo straight to Google Drive via Apps Script
+    // Upload photo directly to Google Apps Script Web App
     async function uploadPhotoToDrive(file) {
       const base64 = await compressImageFile(file, 400, 400);
 
@@ -730,8 +731,8 @@ const GOOGLE_SHEET_API = "https://script.google.com/macros/s/.../exec";
         const data = await res.json();
 
         if (data && data.schedule && data.coords && data.leads) {
-          COORDINATORS_ROSTER = data.coords;
-          LEADERS_ROSTER = data.leads;
+          COORDINATORS_ROSTER = data.coords.length ? data.coords : [...DEFAULT_COORDINATORS];
+          LEADERS_ROSTER = data.leads.length ? data.leads : [...DEFAULT_LEADERS];
           schedule = data.schedule;
 
           DAYS.forEach(day => {
@@ -752,7 +753,7 @@ const GOOGLE_SHEET_API = "https://script.google.com/macros/s/.../exec";
           return;
         }
       } catch (err) {
-        console.warn("Could not reach Google Sheets, checking local backup...", err);
+        console.warn("Could not reach Google Sheets endpoint, using local backup...", err);
       }
 
       const localBackup = localStorage.getItem(STORAGE_BACKUP_KEY);
@@ -796,7 +797,7 @@ const GOOGLE_SHEET_API = "https://script.google.com/macros/s/.../exec";
         }, 600);
       } catch (err) {
         console.error("Save to Google Sheet failed:", err);
-        alert("Saved locally, but could not update Google Sheet. Please check internet connection.");
+        alert("Saved locally, but could not sync to Google Sheets. Check your backend deployment access permissions.");
         saveBtn.disabled = false;
         saveBtn.textContent = "Save & Apply Changes";
         document.getElementById("setupModal").classList.remove("open");
@@ -964,262 +965,265 @@ const GOOGLE_SHEET_API = "https://script.google.com/macros/s/.../exec";
         modalHTML += buildSlotRows(config.leaders, LEADERS_ROSTER, "var(--lead-color)", isLinked);
       }
       if (config.optionalEvents && config.optionalEvents.length) {
-        modalHTML += `<div style="font-size:1.3rem; font-weight:800; color:var(--event-color); margin-top:8px;">Optional Event Coverage</div>`;
-        config.optionalEvents.forEach(evt => {
-          const pool = evt.type === "coord" ? COORDINATORS_ROSTER : LEADERS_ROSTER;
-          const labelColor = evt.type === "coord" ? "var(--coord-color)" : "var(--lead-color)";
-          modalHTML += buildSlotRows([evt], pool, labelColor);
-        });
+        modalHTML += `<div style="font-size:1.3rem; font-weight:800; color:var(--event-color); margin-top:8px;">Optional Events & Specials</div>`;
+        modalHTML += buildSlotRows(
+          config.optionalEvents.map(e => e.key),
+          [...COORDINATORS_ROSTER, ...LEADERS_ROSTER],
+          "var(--event-color)"
+        );
       }
 
       container.innerHTML = modalHTML;
 
-      container.querySelectorAll("select[data-linked='true']").forEach(sel => {
+      // Event listeners for select changes
+      container.querySelectorAll(".assignment-select").forEach(sel => {
         sel.addEventListener("change", (e) => {
-          const slotKey = e.target.dataset.slot;
-          const selectedVal = e.target.value;
-          
-          if (!schedule[setupSelectedDay]) schedule[setupSelectedDay] = {};
-          if (!schedule[setupSelectedDay]["60 Area"]) schedule[setupSelectedDay]["60 Area"] = {};
-          if (!schedule[setupSelectedDay]["80 Area"]) schedule[setupSelectedDay]["80 Area"] = {};
+          const slot = e.target.dataset.slot;
+          const val = e.target.value;
+          const isLinked = e.target.dataset.linked === "true";
 
-          schedule[setupSelectedDay]["60 Area"][slotKey] = selectedVal;
-          schedule[setupSelectedDay]["80 Area"][slotKey] = selectedVal;
+          if (!schedule[setupSelectedDay]) schedule[setupSelectedDay] = {};
+          if (!schedule[setupSelectedDay][setupSelectedArea]) schedule[setupSelectedDay][setupSelectedArea] = {};
+
+          schedule[setupSelectedDay][setupSelectedArea][slot] = val;
+
+          // Mirror changes if linked between 60 & 80 Areas
+          if (isLinked) {
+            const partnerArea = setupSelectedArea === "60 Area" ? "80 Area" : "60 Area";
+            if (!schedule[setupSelectedDay][partnerArea]) schedule[setupSelectedDay][partnerArea] = {};
+            schedule[setupSelectedDay][partnerArea][slot] = val;
+          }
         });
       });
     }
 
     function renderRosterLists() {
-      document.getElementById("newCoordPreview").src = tempCoordPhoto;
-      document.getElementById("newLeadPreview").src = tempLeadPhoto;
-
-      // 1. Coordinators Roster Table
+      // 1. Coordinators
       const coordContainer = document.getElementById("coordList");
-      coordContainer.innerHTML = "";
-      COORDINATORS_ROSTER.forEach(person => {
-        const row = document.createElement("div");
-        row.className = "roster-row";
-        row.innerHTML = `
-          <img class="row-thumb" src="${person.photo || DEFAULT_AVATAR}">
-          <input type="text" class="roster-input name-field" value="${person.name}" placeholder="Name">
+      coordContainer.innerHTML = COORDINATORS_ROSTER.map(c => `
+        <div class="roster-row" data-id="${c.id}">
+          <img class="row-thumb" src="${c.photo || DEFAULT_AVATAR}">
+          <input type="text" class="roster-input coord-name-input" value="${c.name}">
           <label class="upload-btn-label">
             📷 Change
-            <input type="file" class="row-file-input" accept="image/*" style="display:none;">
+            <input type="file" class="coord-file-input" accept="image/*" style="display:none;">
           </label>
-          <button class="roster-delete-btn" title="Delete">✕</button>
-        `;
-        row.querySelector(".name-field").addEventListener("input", (e) => person.name = e.target.value);
-        row.querySelector(".row-file-input").addEventListener("change", async (e) => {
-          if (e.target.files && e.target.files[0]) {
-            const thumb = row.querySelector(".row-thumb");
-            thumb.style.opacity = "0.4";
-            try {
-              const driveUrl = await uploadPhotoToDrive(e.target.files[0]);
-              person.photo = driveUrl;
-              thumb.src = driveUrl;
-            } catch (err) {
-              alert("Photo upload error: " + err.message);
-            } finally {
-              thumb.style.opacity = "1";
-            }
-          }
+          <button class="roster-delete-btn del-coord-btn">✕</button>
+        </div>
+      `).join("");
+
+      // 2. Leaders
+      const leadContainer = document.getElementById("leadList");
+      leadContainer.innerHTML = LEADERS_ROSTER.map(l => `
+        <div class="roster-row" data-id="${l.id}">
+          <img class="row-thumb" src="${l.photo || DEFAULT_AVATAR}">
+          <input type="text" class="roster-input lead-name-input" value="${l.name}">
+          <label class="upload-btn-label">
+            📷 Change
+            <input type="file" class="lead-file-input" accept="image/*" style="display:none;">
+          </label>
+          <button class="roster-delete-btn del-lead-btn">✕</button>
+        </div>
+      `).join("");
+
+      // Attach Coordinators events
+      coordContainer.querySelectorAll(".coord-name-input").forEach(input => {
+        input.addEventListener("input", (e) => {
+          const id = e.target.closest(".roster-row").dataset.id;
+          const item = COORDINATORS_ROSTER.find(x => x.id === id);
+          if (item) item.name = e.target.value;
         });
-        row.querySelector(".roster-delete-btn").addEventListener("click", () => {
-          COORDINATORS_ROSTER = COORDINATORS_ROSTER.filter(p => p.id !== person.id);
-          renderRosterLists();
-          refreshScheduleView();
-        });
-        coordContainer.appendChild(row);
       });
 
-      // 2. Leaders Roster Table
-      const leadContainer = document.getElementById("leadList");
-      leadContainer.innerHTML = "";
-      LEADERS_ROSTER.forEach(person => {
-        const row = document.createElement("div");
-        row.className = "roster-row";
-        row.innerHTML = `
-          <img class="row-thumb" src="${person.photo || DEFAULT_AVATAR}">
-          <input type="text" class="roster-input name-field" value="${person.name}" placeholder="Name">
-          <label class="upload-btn-label">
-            📷 Change
-            <input type="file" class="row-file-input" accept="image/*" style="display:none;">
-          </label>
-          <button class="roster-delete-btn" title="Delete">✕</button>
-        `;
-        row.querySelector(".name-field").addEventListener("input", (e) => person.name = e.target.value);
-        row.querySelector(".row-file-input").addEventListener("change", async (e) => {
-          if (e.target.files && e.target.files[0]) {
-            const thumb = row.querySelector(".row-thumb");
-            thumb.style.opacity = "0.4";
-            try {
-              const driveUrl = await uploadPhotoToDrive(e.target.files[0]);
-              person.photo = driveUrl;
-              thumb.src = driveUrl;
-            } catch (err) {
-              alert("Photo upload error: " + err.message);
-            } finally {
-              thumb.style.opacity = "1";
-            }
+      coordContainer.querySelectorAll(".coord-file-input").forEach(input => {
+        input.addEventListener("change", async (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const row = e.target.closest(".roster-row");
+          const img = row.querySelector(".row-thumb");
+          img.style.opacity = "0.4";
+
+          try {
+            const url = await uploadPhotoToDrive(file);
+            const item = COORDINATORS_ROSTER.find(x => x.id === row.dataset.id);
+            if (item) item.photo = url;
+            img.src = url;
+          } catch (err) {
+            alert("Failed to upload photo: " + err.message);
+          } finally {
+            img.style.opacity = "1";
           }
         });
-        row.querySelector(".roster-delete-btn").addEventListener("click", () => {
-          LEADERS_ROSTER = LEADERS_ROSTER.filter(p => p.id !== person.id);
+      });
+
+      coordContainer.querySelectorAll(".del-coord-btn").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          const id = e.target.closest(".roster-row").dataset.id;
+          COORDINATORS_ROSTER = COORDINATORS_ROSTER.filter(x => x.id !== id);
           renderRosterLists();
-          refreshScheduleView();
         });
-        leadContainer.appendChild(row);
+      });
+
+      // Attach Leaders events
+      leadContainer.querySelectorAll(".lead-name-input").forEach(input => {
+        input.addEventListener("input", (e) => {
+          const id = e.target.closest(".roster-row").dataset.id;
+          const item = LEADERS_ROSTER.find(x => x.id === id);
+          if (item) item.name = e.target.value;
+        });
+      });
+
+      leadContainer.querySelectorAll(".lead-file-input").forEach(input => {
+        input.addEventListener("change", async (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const row = e.target.closest(".roster-row");
+          const img = row.querySelector(".row-thumb");
+          img.style.opacity = "0.4";
+
+          try {
+            const url = await uploadPhotoToDrive(file);
+            const item = LEADERS_ROSTER.find(x => x.id === row.dataset.id);
+            if (item) item.photo = url;
+            img.src = url;
+          } catch (err) {
+            alert("Failed to upload photo: " + err.message);
+          } finally {
+            img.style.opacity = "1";
+          }
+        });
+      });
+
+      leadContainer.querySelectorAll(".del-lead-btn").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          const id = e.target.closest(".roster-row").dataset.id;
+          LEADERS_ROSTER = LEADERS_ROSTER.filter(x => x.id !== id);
+          renderRosterLists();
+        });
       });
     }
 
-    // Tab switcher
+    // Modal Navigation and Interactivity
     document.querySelectorAll(".tab-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      btn.addEventListener("click", (e) => {
+        document.querySelectorAll(".tab-btn").forEach(t => t.classList.remove("active"));
         document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
 
-        btn.classList.add("active");
-        document.getElementById(btn.dataset.tab).classList.add("active");
+        e.target.classList.add("active");
+        const tabId = e.target.dataset.tab;
+        document.getElementById(tabId).classList.add("active");
 
-        if (btn.dataset.tab === "tab-schedule") {
-          refreshScheduleView();
-        } else if (btn.dataset.tab === "tab-roster") {
-          renderRosterLists();
-        }
+        if (tabId === "tab-roster") renderRosterLists();
+        if (tabId === "tab-schedule") refreshScheduleView();
       });
     });
 
-    // File selection for new Coordinator
+    document.querySelectorAll("#setupDays .pill-btn").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        setupSelectedDay = e.target.dataset.day;
+        refreshScheduleView();
+      });
+    });
+
+    document.querySelectorAll("#setupAreas .pill-btn").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        setupSelectedArea = e.target.dataset.area;
+        refreshScheduleView();
+      });
+    });
+
+    // Handle Uploads for New Staff Controls
     document.getElementById("newCoordFile").addEventListener("change", async (e) => {
-      if (e.target.files && e.target.files[0]) {
-        const preview = document.getElementById("newCoordPreview");
-        preview.style.opacity = "0.4";
-        try {
-          tempCoordPhoto = await uploadPhotoToDrive(e.target.files[0]);
-          preview.src = tempCoordPhoto;
-        } catch (err) {
-          alert("Photo upload error: " + err.message);
-        } finally {
-          preview.style.opacity = "1";
-        }
+      const file = e.target.files[0];
+      if (!file) return;
+      const preview = document.getElementById("newCoordPreview");
+      preview.style.opacity = "0.4";
+      try {
+        tempCoordPhoto = await uploadPhotoToDrive(file);
+        preview.src = tempCoordPhoto;
+      } catch (err) {
+        alert("Failed to upload photo: " + err.message);
+      } finally {
+        preview.style.opacity = "1";
       }
     });
 
-    // File selection for new Leader
     document.getElementById("newLeadFile").addEventListener("change", async (e) => {
-      if (e.target.files && e.target.files[0]) {
-        const preview = document.getElementById("newLeadPreview");
-        preview.style.opacity = "0.4";
-        try {
-          tempLeadPhoto = await uploadPhotoToDrive(e.target.files[0]);
-          preview.src = tempLeadPhoto;
-        } catch (err) {
-          alert("Photo upload error: " + err.message);
-        } finally {
-          preview.style.opacity = "1";
-        }
+      const file = e.target.files[0];
+      if (!file) return;
+      const preview = document.getElementById("newLeadPreview");
+      preview.style.opacity = "0.4";
+      try {
+        tempLeadPhoto = await uploadPhotoToDrive(file);
+        preview.src = tempLeadPhoto;
+      } catch (err) {
+        alert("Failed to upload photo: " + err.message);
+      } finally {
+        preview.style.opacity = "1";
       }
     });
 
-    // Add Coordinator Handler
     document.getElementById("addCoordBtn").addEventListener("click", () => {
-      const nameEl = document.getElementById("newCoordName");
-      if (!nameEl.value.trim()) return alert("Please enter a Coordinator name");
+      const nameInput = document.getElementById("newCoordName");
+      const name = nameInput.value.trim();
+      if (!name) return alert("Please enter a coordinator name.");
 
       COORDINATORS_ROSTER.push({
         id: "c_" + Date.now(),
-        name: nameEl.value.trim(),
+        name: name,
         photo: tempCoordPhoto
       });
 
-      nameEl.value = "";
+      nameInput.value = "";
       tempCoordPhoto = DEFAULT_AVATAR;
+      document.getElementById("newCoordPreview").src = DEFAULT_AVATAR;
       renderRosterLists();
-      refreshScheduleView();
     });
 
-    // Add Leader Handler
     document.getElementById("addLeadBtn").addEventListener("click", () => {
-      const nameEl = document.getElementById("newLeadName");
-      if (!nameEl.value.trim()) return alert("Please enter a Leader name");
+      const nameInput = document.getElementById("newLeadName");
+      const name = nameInput.value.trim();
+      if (!name) return alert("Please enter a leader name.");
 
       LEADERS_ROSTER.push({
         id: "l_" + Date.now(),
-        name: nameEl.value.trim(),
+        name: name,
         photo: tempLeadPhoto
       });
 
-      nameEl.value = "";
+      nameInput.value = "";
       tempLeadPhoto = DEFAULT_AVATAR;
+      document.getElementById("newLeadPreview").src = DEFAULT_AVATAR;
       renderRosterLists();
-      refreshScheduleView();
     });
 
-    document.getElementById("openSetup").addEventListener("click", () => {
-      clearInterval(slideTimer);
-      clearInterval(progressTimer);
-      setupSelectedDay = getToday();
-      setupSelectedArea = AREAS[currentAreaIndex];
-      refreshScheduleView();
-      renderRosterLists();
-      document.getElementById("setupModal").classList.add("open");
-    });
-
-    document.getElementById("setupDays").addEventListener("click", (e) => {
-      if (e.target.dataset.day) {
-        setupSelectedDay = e.target.dataset.day;
-        refreshScheduleView();
-      }
-    });
-
-    document.getElementById("setupAreas").addEventListener("click", (e) => {
-      if (e.target.dataset.area) {
-        setupSelectedArea = e.target.dataset.area;
-        refreshScheduleView();
-      }
-    });
-
-    document.getElementById("saveSetupBtn").addEventListener("click", () => {
-      if (!schedule[setupSelectedDay]) schedule[setupSelectedDay] = {};
-      if (!schedule[setupSelectedDay][setupSelectedArea]) schedule[setupSelectedDay][setupSelectedArea] = {};
-
-      const selects = document.querySelectorAll("#setupSlotsContainer select");
-      selects.forEach(sel => {
-        const slotKey = sel.dataset.slot;
-        const val = sel.value;
-        schedule[setupSelectedDay][setupSelectedArea][slotKey] = val;
-
-        if (LINKED_LEADER_SLOTS.includes(slotKey)) {
-          if (!schedule[setupSelectedDay]["60 Area"]) schedule[setupSelectedDay]["60 Area"] = {};
-          if (!schedule[setupSelectedDay]["80 Area"]) schedule[setupSelectedDay]["80 Area"] = {};
-          schedule[setupSelectedDay]["60 Area"][slotKey] = val;
-          schedule[setupSelectedDay]["80 Area"][slotKey] = val;
-        }
-      });
-
-      saveAllData();
-    });
-
-    document.getElementById("closeSetupBtn").addEventListener("click", () => {
-      loadAllData().then(() => {
-        document.getElementById("setupModal").classList.remove("open");
+    // Footer Nav manual switching
+    document.querySelectorAll(".area-pill").forEach((pill, idx) => {
+      pill.addEventListener("click", () => {
+        currentAreaIndex = idx;
         startCycle();
       });
     });
 
-    // Auto-poll Google Sheets every 30 seconds
-    setInterval(async () => {
-      const isModalOpen = document.getElementById("setupModal").classList.contains("open");
-      if (!isModalOpen) {
-        await loadAllData();
-        renderDisplay(currentAreaIndex);
-      }
-    }, 30000);
-
-    // Initial Launch
-    loadAllData().then(() => {
-      startCycle();
+    // Admin Modal Open / Close / Save
+    document.getElementById("openSetup").addEventListener("click", () => {
+      refreshScheduleView();
+      document.getElementById("setupModal").classList.add("open");
     });
+
+    document.getElementById("closeSetupBtn").addEventListener("click", () => {
+      document.getElementById("setupModal").classList.remove("open");
+    });
+
+    document.getElementById("saveSetupBtn").addEventListener("click", saveAllData);
+
+    // Initialization
+    async function init() {
+      await loadAllData();
+      startCycle();
+    }
+
+    init();
   </script>
 </body>
 </html>
