@@ -2,1251 +2,405 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>MKDPI Daily Lineup - Operations Roster</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dynamic Lineup Display</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
-    :root {
-      /* Brand Palette */
-      --brand-lime-light: #c2e76b;  /* RGB 194 231 107 */
-      --brand-lime-green: #8dc63f;  /* RGB 141 198 63 */
-      --brand-cyan:       #00a6ce;  /* RGB 0 166 206 */
-      --brand-deep-blue:  #134d88;  /* RGB 19 77 136 */
-      --brand-slate-dark: #455560;  /* RGB 69 85 96 */
-
-      /* UI Tokens */
-      --bg-dark: #0c1824;
-      --surface: #172736;
-      --surface-subtle: #213547;
-      --border: #2d455c;
-
-      /* Role Badges */
-      --coord-color: var(--brand-cyan);
-      --coord-badge-bg: rgba(0, 166, 206, 0.16);
-
-      --lead-color: var(--brand-lime-green);
-      --lead-badge-bg: rgba(141, 198, 63, 0.16);
-
-      --event-color: var(--brand-lime-light);
-      --event-badge-bg: rgba(194, 231, 107, 0.18);
-
-      --danger-color: #ef4444;
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-
     body {
-      background: radial-gradient(circle at 50% 10%, #152e46 0%, var(--bg-dark) 80%);
-      color: var(--text-main);
-      width: 1080px;
-      height: 1920px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #0b0f19;
+      color: #f3f4f6;
       overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 55px 48px 45px;
-      position: relative;
     }
 
-    /* Top Section */
-    .header {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-      text-align: center;
-    }
-    .brand-title {
-      font-size: 2.3rem;
-      font-weight: 900;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: #ffffff;
-      display: flex;
-      align-items: center;
-      gap: 18px;
-    }
-    .brand-title::before,
-    .brand-title::after {
-      content: "";
-      width: 52px;
-      height: 4px;
-      background: var(--brand-lime-light);
-      border-radius: 999px;
-    }
-    .day-pill {
-      font-size: 1.35rem;
-      font-weight: 800;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--brand-lime-light);
-      border: 2px solid var(--brand-lime-light);
-      padding: 6px 26px;
-      border-radius: 999px;
-      background: rgba(194, 231, 107, 0.12);
-    }
-    .area-title {
-      font-size: 4.1rem;
-      font-weight: 900;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-      line-height: 1.1;
-      color: #ffffff;
+    /* 3D Stage for Perspective Animations */
+    .perspective-stage {
+      perspective: 1200px;
     }
 
-    /* Content Stage */
-    .stage {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 24px;
-      width: 100%;
-      padding: 10px 0;
-      transition: opacity 0.3s ease, transform 0.3s ease;
+    /* Tile Entry & Exit Animations */
+    .tile-card {
+      transition: all 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transform-origin: center center;
+      backface-visibility: hidden;
     }
-    .stage.fading {
+
+    /* Entering animation: scale up + slide upward + subtle 3D tilt */
+    .tile-enter {
       opacity: 0;
-      transform: translateY(8px);
+      transform: translateY(40px) scale(0.85) rotateX(15deg);
     }
 
-    .section-group {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-    .section-title {
-      font-size: 1.65rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .section-title.coords { color: var(--coord-color); }
-    .section-title.leaders { color: var(--lead-color); }
-    .section-title.events { color: var(--event-color); }
-    .section-title::after {
-      content: "";
-      flex: 1;
-      height: 2px;
-      background: var(--border);
+    .tile-active {
+      opacity: 1;
+      transform: translateY(0) scale(1) rotateX(0deg);
     }
 
-    /* Grids */
-    .slot-grid {
-      display: grid;
-      gap: 16px;
-    }
-    .grid-2 { grid-template-columns: repeat(2, 1fr); max-width: 650px; margin: 0 auto; width: 100%; }
-    .grid-3 { grid-template-columns: repeat(3, 1fr); }
-    .grid-4 { grid-template-columns: repeat(4, 1fr); }
-    .grid-5 { 
-      display: flex; 
-      flex-wrap: wrap; 
-      justify-content: center; 
-      gap: 16px; 
-    }
-    .grid-5 .slot-card {
-      width: calc(33.333% - 12px);
+    /* Exiting animation: scale down + slide downward + tilt away */
+    .tile-exit {
+      opacity: 0;
+      transform: translateY(-40px) scale(0.85) rotateX(-15deg);
     }
 
-    .slot-card {
-      background: var(--surface);
-      border: 2px solid var(--border);
-      border-radius: 22px;
-      padding: 20px 12px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      box-shadow: 0 10px 24px rgba(0,0,0,0.45);
-    }
-    .slot-badge {
-      font-size: 1.25rem;
-      font-weight: 900;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      padding: 6px 18px;
-      border-radius: 999px;
-      margin-bottom: 14px;
-    }
-    .slot-badge.coord {
-      color: var(--coord-color);
-      background: var(--coord-badge-bg);
-      border: 1.5px solid var(--coord-color);
-    }
-    .slot-badge.leader {
-      color: var(--lead-color);
-      background: var(--lead-badge-bg);
-      border: 1.5px solid var(--lead-color);
-    }
-    .slot-badge.event {
-      color: var(--event-color);
-      background: var(--event-badge-bg);
-      border: 1.5px solid var(--event-color);
-    }
-    .slot-avatar {
-      width: 125px;
-      height: 125px;
-      border-radius: 50%;
-      object-fit: cover;
-      margin-bottom: 12px;
-      border: 4px solid var(--border);
-      background: var(--brand-slate-dark);
-    }
-    .slot-name {
-      font-size: 1.55rem;
-      font-weight: 800;
-      line-height: 1.2;
-      min-height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .slot-name.unassigned {
-      color: var(--text-muted);
-      font-size: 1.2rem;
-      font-weight: 600;
-      font-style: italic;
+    /* Image zoom effect on card container */
+    .tile-card:hover .tile-bg-photo {
+      transform: scale(1.08);
     }
 
-    /* Footer */
-    .footer {
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-      width: 100%;
-    }
-    .area-nav-pills {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 12px;
-    }
-    .area-pill {
-      padding: 14px 8px;
-      text-align: center;
-      font-size: 1.2rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      background: var(--surface);
-      border: 2px solid var(--border);
-      color: var(--text-muted);
-      border-radius: 12px;
-      cursor: pointer;
-    }
-    .area-pill.active {
-      background: var(--brand-deep-blue);
-      color: #ffffff;
-      border-color: var(--brand-cyan);
-      box-shadow: 0 0 20px rgba(0, 166, 206, 0.45);
-    }
-    .progress-bar-wrap {
-      width: 100%;
-      height: 8px;
-      background: var(--border);
-      border-radius: 999px;
-      overflow: hidden;
-    }
-    .progress-bar {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, var(--brand-cyan), var(--brand-lime-green));
-      transition: width 0.1s linear;
+    .tile-bg-photo {
+      transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    /* Admin Button */
-    .admin-btn {
-      position: absolute;
-      top: 40px;
-      right: 40px;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      color: var(--text-muted);
-      font-size: 1.2rem;
-      padding: 10px 20px;
-      border-radius: 12px;
-      cursor: pointer;
-      z-index: 10;
+    /* Custom Scrollbar for Settings Modal */
+    ::-webkit-scrollbar {
+      width: 6px;
     }
-
-    /* Setup Modal */
-    .modal {
-      display: none;
-      position: absolute;
-      inset: 0;
-      background: rgba(12, 24, 36, 0.97);
-      z-index: 50;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 40px;
+    ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
     }
-    .modal.open { display: flex; }
-    .modal-card {
-      width: 100%;
-      max-width: 960px;
-      background: var(--surface);
-      border: 2px solid var(--border);
-      border-radius: 26px;
-      padding: 36px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-      max-height: 90vh;
-      overflow-y: auto;
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 3px;
     }
-
-    /* Top Modal Tabs */
-    .modal-nav-tabs {
-      display: flex;
-      gap: 12px;
-      border-bottom: 2px solid var(--border);
-      padding-bottom: 16px;
-    }
-    .tab-btn {
-      padding: 12px 24px;
-      font-size: 1.3rem;
-      font-weight: 800;
-      color: var(--text-muted);
-      background: transparent;
-      border: 2px solid transparent;
-      border-radius: 12px;
-      cursor: pointer;
-    }
-    .tab-btn.active {
-      background: var(--surface-subtle);
-      color: var(--brand-cyan);
-      border-color: var(--brand-cyan);
-    }
-
-    .tab-content { display: none; flex-direction: column; gap: 20px; }
-    .tab-content.active { display: flex; }
-
-    .pill-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
-    .area-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
-    .pill-btn {
-      padding: 10px 6px;
-      text-align: center;
-      font-size: 1.05rem;
-      font-weight: 700;
-      background: var(--border);
-      color: var(--text-muted);
-      border-radius: 10px;
-      cursor: pointer;
-    }
-    .pill-btn.active { background: var(--brand-cyan); color: #0c1824; }
-    
-    .assignment-row {
-      display: grid;
-      grid-template-columns: 210px 1fr;
-      align-items: center;
-      gap: 16px;
-      background: var(--surface-subtle);
-      padding: 12px 18px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-    }
-    .assignment-label { font-size: 1.25rem; font-weight: 800; }
-    .assignment-select {
-      background: var(--bg-dark);
-      color: var(--text-main);
-      border: 1px solid var(--border);
-      padding: 10px 14px;
-      font-size: 1.2rem;
-      border-radius: 10px;
-      width: 100%;
-    }
-
-    /* Roster Editor Sections */
-    .roster-section-title {
-      font-size: 1.35rem;
-      font-weight: 800;
-      margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .roster-table {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      max-height: 250px;
-      overflow-y: auto;
-      margin-top: 10px;
-    }
-    .roster-row {
-      display: grid;
-      grid-template-columns: 50px 1fr 140px 45px;
-      gap: 12px;
-      align-items: center;
-      background: var(--surface-subtle);
-      padding: 8px 12px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-    }
-    .row-thumb {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 2px solid var(--border);
-      background: #090e17;
-      transition: opacity 0.2s ease;
-    }
-    .roster-input {
-      background: var(--bg-dark);
-      color: var(--text-main);
-      border: 1px solid var(--border);
-      padding: 8px 12px;
-      font-size: 1.1rem;
-      border-radius: 8px;
-      width: 100%;
-    }
-    .upload-btn-label {
-      background: var(--brand-slate-dark);
-      color: #ffffff;
-      padding: 8px 10px;
-      border-radius: 8px;
-      font-size: 0.95rem;
-      font-weight: 700;
-      text-align: center;
-      cursor: pointer;
-      display: inline-block;
-      white-space: nowrap;
-      border: 1px solid var(--border);
-    }
-    .upload-btn-label:hover {
-      background: var(--brand-deep-blue);
-    }
-    .roster-delete-btn {
-      background: rgba(239, 68, 68, 0.15);
-      border: 1px solid var(--danger-color);
-      color: var(--danger-color);
-      font-size: 1.2rem;
-      font-weight: 800;
-      border-radius: 8px;
-      height: 38px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .add-roster-box {
-      display: grid;
-      grid-template-columns: 50px 1fr 140px 130px;
-      gap: 12px;
-      background: var(--bg-dark);
-      padding: 12px;
-      border-radius: 12px;
-      border: 2px dashed var(--border);
-      align-items: center;
-    }
-
-    .modal-btns { display: flex; gap: 16px; margin-top: 10px; }
-    .btn {
-      flex: 1;
-      padding: 16px;
-      border-radius: 12px;
-      font-size: 1.3rem;
-      font-weight: 800;
-      border: none;
-      cursor: pointer;
-    }
-    .btn-save { background: var(--brand-lime-green); color: #0c1824; }
-    .btn-save:disabled { opacity: 0.6; cursor: wait; }
-    .btn-add { background: var(--brand-lime-green); color: #0c1824; padding: 10px; border-radius: 8px; font-weight: 800; font-size: 1.05rem; border: none; cursor: pointer; }
-    .btn-close { background: var(--border); color: var(--text-main); }
   </style>
 </head>
-<body>
+<body class="h-screen w-screen flex flex-col justify-between p-8 relative selection:bg-indigo-500 selection:text-white">
 
-  <button class="admin-btn" id="openSetup">⚙ Shift Setup</button>
-
-  <div class="header">
-    <div class="brand-title">MKDPI Daily Lineup</div>
-    <div class="day-pill" id="dayPill">Loading...</div>
-    <div class="area-title" id="areaTitle">Area</div>
-  </div>
-
-  <div class="stage" id="stage"></div>
-
-  <div class="footer">
-    <div class="area-nav-pills" id="navPills">
-      <div class="area-pill" data-area="50 Area">50 Area</div>
-      <div class="area-pill" data-area="60 Area">60 Area</div>
-      <div class="area-pill" data-area="80 Area">80 Area</div>
-      <div class="area-pill" data-area="Base">Base</div>
-      <div class="area-pill" data-area="Deployment">Deployment</div>
+  <!-- TOP BAR / HEADER -->
+  <header class="flex justify-between items-center z-10 mb-4">
+    <div>
+      <div class="flex items-center gap-3">
+        <span class="inline-block w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></span>
+        <h1 id="area-title" class="text-4xl font-extrabold tracking-tight text-white drop-shadow-md">
+          Main Stage
+        </h1>
+      </div>
+      <p id="area-subtitle" class="text-slate-400 text-lg font-medium mt-1">
+        Current & Upcoming Lineup
+      </p>
     </div>
-    <div class="progress-bar-wrap">
-      <div class="progress-bar" id="progressBar"></div>
+
+    <div class="flex items-center gap-4">
+      <!-- Live Indicator / Timer -->
+      <div class="bg-slate-900/80 border border-slate-800 backdrop-blur-md px-5 py-2.5 rounded-2xl flex items-center gap-3 shadow-lg">
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Next Area In</span>
+        <span id="timer-display" class="font-mono text-xl font-bold text-indigo-400">10s</span>
+      </div>
+
+      <!-- Settings Button -->
+      <button id="open-settings" class="p-3 bg-slate-900/80 hover:bg-slate-800 border border-slate-800 rounded-2xl text-slate-300 hover:text-white transition-all shadow-lg active:scale-95">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+      </button>
     </div>
-  </div>
+  </header>
 
-  <!-- Setup Modal with Separated Databases & Photo Uploader -->
-  <div class="modal" id="setupModal">
-    <div class="modal-card">
-      <div class="modal-nav-tabs">
-        <button class="tab-btn active" data-tab="tab-schedule">📅 Shift Scheduling</button>
-        <button class="tab-btn" data-tab="tab-roster">👥 Staff Directories</button>
+  <!-- MAIN TILES CONTAINER (EXPANDED PHOTO CARDS) -->
+  <main class="flex-1 perspective-stage flex items-center justify-center py-2">
+    <div id="tiles-container" class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full h-full max-h-[720px]">
+      <!-- Tiles dynamically injected here -->
+    </div>
+  </main>
+
+  <!-- FOOTER NAVIGATION / AREA INDICATORS -->
+  <footer class="flex justify-between items-center z-10 pt-4">
+    <div id="area-dots" class="flex items-center gap-3">
+      <!-- Dynamic dots for current active area -->
+    </div>
+
+    <div class="text-xs font-semibold text-slate-500 uppercase tracking-widest">
+      Automated Display Node #04
+    </div>
+  </footer>
+
+  <!-- SETTINGS MODAL -->
+  <div id="settings-modal" class="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8 max-w-md w-full shadow-2xl transform scale-95 transition-transform duration-300" id="settings-card">
+      <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+        </svg>
+        Display Settings
+      </h2>
+
+      <div class="space-y-6">
+        <!-- Transition Time Range Slider -->
+        <div>
+          <div class="flex justify-between items-center mb-2">
+            <label class="text-sm font-semibold text-slate-300">Area Transition Delay</label>
+            <span id="slider-value" class="text-sm font-mono font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-1 rounded-lg">10 seconds</span>
+          </div>
+          <input type="range" id="transition-slider" min="3" max="30" value="10" step="1" 
+            class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+          <div class="flex justify-between text-xs text-slate-500 mt-2 font-medium">
+            <span>3s (Fast)</span>
+            <span>15s</span>
+            <span>30s (Slow)</span>
+          </div>
+        </div>
+
+        <!-- Animation Style Info -->
+        <div class="p-4 bg-slate-800/50 border border-slate-700/50 rounded-2xl">
+          <p class="text-xs text-slate-400 leading-relaxed">
+            <strong class="text-slate-200">Enhanced Photo Mode:</strong> Tiles automatically scale up to fill space, utilizing high-contrast photo overlays and staggered 3D entering & exiting transitions.
+          </p>
+        </div>
       </div>
 
-      <!-- Tab 1: Scheduling -->
-      <div class="tab-content active" id="tab-schedule">
-        <div>
-          <label style="font-size:1.05rem; color:var(--text-muted); margin-bottom:6px; display:block;">1. Select Day</label>
-          <div class="pill-row" id="setupDays">
-            <div class="pill-btn" data-day="Sunday">Sun</div>
-            <div class="pill-btn" data-day="Monday">Mon</div>
-            <div class="pill-btn" data-day="Tuesday">Tue</div>
-            <div class="pill-btn" data-day="Wednesday">Wed</div>
-            <div class="pill-btn" data-day="Thursday">Thu</div>
-            <div class="pill-btn" data-day="Friday">Fri</div>
-            <div class="pill-btn" data-day="Saturday">Sat</div>
-          </div>
-        </div>
-
-        <div>
-          <label style="font-size:1.05rem; color:var(--text-muted); margin-bottom:6px; display:block;">2. Select Area</label>
-          <div class="area-row" id="setupAreas">
-            <div class="pill-btn" data-area="50 Area">50 Area</div>
-            <div class="pill-btn" data-area="60 Area">60 Area</div>
-            <div class="pill-btn" data-area="80 Area">80 Area</div>
-            <div class="pill-btn" data-area="Base">Base</div>
-            <div class="pill-btn" data-area="Deployment">Deployment</div>
-          </div>
-        </div>
-
-        <div id="setupSlotsContainer" style="display:flex; flex-direction:column; gap:12px;"></div>
-      </div>
-
-      <!-- Tab 2: Separate Databases with Photo Uploader -->
-      <div class="tab-content" id="tab-roster">
-        
-        <!-- Database 1: Coordinators -->
-        <div>
-          <div class="roster-section-title" style="color:var(--coord-color);">
-            <span>🔷 Coordinators Database</span>
-          </div>
-          <div class="add-roster-box">
-            <img id="newCoordPreview" class="row-thumb" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='%2394a3b8'><circle cx='50' cy='36' r='20'/><path d='M50 62c-22 0-36 12-36 24v4h72v-4c0-12-14-24-36-24z'/></svg>">
-            <input type="text" class="roster-input" id="newCoordName" placeholder="Coordinator Name">
-            <label class="upload-btn-label">
-              📷 Upload Photo
-              <input type="file" id="newCoordFile" accept="image/*" style="display:none;">
-            </label>
-            <button class="btn-add" id="addCoordBtn">+ Add Coord</button>
-          </div>
-          <div class="roster-table" id="coordList"></div>
-        </div>
-
-        <!-- Database 2: Leaders -->
-        <div style="margin-top: 14px; border-top: 1px solid var(--border); padding-top: 16px;">
-          <div class="roster-section-title" style="color:var(--lead-color);">
-            <span>🔶 Leaders Database</span>
-          </div>
-          <div class="add-roster-box">
-            <img id="newLeadPreview" class="row-thumb" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='%2394a3b8'><circle cx='50' cy='36' r='20'/><path d='M50 62c-22 0-36 12-36 24v4h72v-4c0-12-14-24-36-24z'/></svg>">
-            <input type="text" class="roster-input" id="newLeadName" placeholder="Leader Name">
-            <label class="upload-btn-label">
-              📷 Upload Photo
-              <input type="file" id="newLeadFile" accept="image/*" style="display:none;">
-            </label>
-            <button class="btn-add" id="addLeadBtn" style="background:var(--lead-color);">+ Add Leader</button>
-          </div>
-          <div class="roster-table" id="leadList"></div>
-        </div>
-
-      </div>
-
-      <div class="modal-btns">
-        <button class="btn btn-close" id="closeSetupBtn">Close</button>
-        <button class="btn btn-save" id="saveSetupBtn">Save & Apply Changes</button>
+      <!-- Action Buttons -->
+      <div class="mt-8 flex gap-3">
+        <button id="close-settings" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-600/30 active:scale-95">
+          Save & Apply
+        </button>
       </div>
     </div>
   </div>
 
   <script>
-    // UPDATED GOOGLE SHEETS WEB APP ENDPOINT
-    const GOOGLE_SHEET_API = "https://script.google.com/macros/s/AKfycby2ZDaS3O0scUfiHhHtQHK7Gr3Mo327H55FRNPMBDLhyeKKlxgndMFziK4RVs-_l8inJg/exec";
-    const AREAS = ["50 Area", "60 Area", "80 Area", "Base", "Deployment"];
-    const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    const ROTATION_MS = 8500;
-    const STORAGE_BACKUP_KEY = "area_roster_local_backup_v15";
-
-    // Clean Default SVG Avatar Placeholder
-    const DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='%2394a3b8'><circle cx='50' cy='36' r='20'/><path d='M50 62c-22 0-36 12-36 24v4h72v-4c0-12-14-24-36-24z'/></svg>";
-
-    // Default Coordinators Database
-    const DEFAULT_COORDINATORS = [
-      { id: "c1", name: "Alex Rivera", photo: DEFAULT_AVATAR },
-      { id: "c2", name: "Jordan Lee", photo: DEFAULT_AVATAR },
-      { id: "c3", name: "Morgan Smith", photo: DEFAULT_AVATAR },
-      { id: "c4", name: "Taylor Reed", photo: DEFAULT_AVATAR },
-      { id: "c5", name: "Casey Miller", photo: DEFAULT_AVATAR },
-      { id: "c6", name: "Dakota Hayes", photo: DEFAULT_AVATAR }
-    ];
-
-    // Default Leaders Database
-    const DEFAULT_LEADERS = [
-      { id: "l1", name: "Chris Vance", photo: DEFAULT_AVATAR },
-      { id: "l2", name: "Sam Patel", photo: DEFAULT_AVATAR },
-      { id: "l3", name: "Pat Murphy", photo: DEFAULT_AVATAR },
-      { id: "l4", name: "Robin Diaz", photo: DEFAULT_AVATAR },
-      { id: "l5", name: "Jamie Chen", photo: DEFAULT_AVATAR },
-      { id: "l6", name: "Quinn Davis", photo: DEFAULT_AVATAR }
-    ];
-
-    let COORDINATORS_ROSTER = [];
-    let LEADERS_ROSTER = [];
-
-    // Temporary upload buffers for newly added records
-    let tempCoordPhoto = DEFAULT_AVATAR;
-    let tempLeadPhoto = DEFAULT_AVATAR;
-
-    // Area Configuration
-    const AREA_CONFIG = {
-      "50 Area": {
-        coordinators: ["50 AM", "50 PM", "51"],
-        leaders: ["5 AM", "5 MID", "5 PM"]
-      },
-      "60 Area": {
-        coordinators: ["60 AM", "60 PM", "61", "CYM"],
-        leaders: ["8 AM", "8 MID", "8 PM"]
-      },
-      "80 Area": {
-        coordinators: ["80 AM", "80 PM", "81"],
-        leaders: ["8 AM", "8 MID", "8 PM"]
-      },
-      "Base": {
-        coordinators: ["Base AM 1", "Base AM 2", "Base MID 1", "Base MID 2", "Base PM"],
-        leaders: [
-          { key: "Base Lead AM", label: "Base AM" },
-          { key: "Base Lead PM", label: "Base PM" }
-        ]
-      },
-      "Deployment": {
-        coordinators: ["Deploy AM", "Deploy MID 1", "Deploy MID 2", "Deploy PM"],
-        leaders: [],
-        optionalEvents: [
-          { key: "Event Coordinator", label: "Event Coordinator", type: "coord" },
-          { key: "Event Leader", label: "Event Leader", type: "lead" }
-        ]
-      }
-    };
-
-    const LINKED_LEADER_SLOTS = ["8 AM", "8 MID", "8 PM"];
-
-    let schedule = {};
-    let currentAreaIndex = 0;
-    let slideTimer = null;
-    let progressTimer = null;
-    let progressStart = 0;
-
-    let setupSelectedDay = "Monday";
-    let setupSelectedArea = "50 Area";
-
-    // Helper: compress uploaded images to 400x400 max before sending to Apps Script
-    function compressImageFile(file, maxWidth = 400, maxHeight = 400) {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (readerEvent) => {
-          const image = new Image();
-          image.onload = () => {
-            const canvas = document.createElement('canvas');
-            let width = image.width;
-            let height = image.height;
-
-            if (width > height) {
-              if (width > maxWidth) {
-                height = Math.round((height * maxWidth) / width);
-                width = maxWidth;
-              }
-            } else {
-              if (height > maxHeight) {
-                width = Math.round((width * maxHeight) / height);
-                height = maxHeight;
-              }
-            }
-
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(image, 0, 0, width, height);
-            resolve(canvas.toDataURL('image/jpeg', 0.82));
-          };
-          image.src = readerEvent.target.result;
-        };
-        reader.readAsDataURL(file);
-      });
-    }
-
-    // Upload photo directly to Google Apps Script Web App
-    async function uploadPhotoToDrive(file) {
-      const base64 = await compressImageFile(file, 400, 400);
-
-      const res = await fetch(GOOGLE_SHEET_API, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({
-          action: "upload_photo",
-          filename: "staff_" + Date.now() + ".jpg",
-          base64: base64
-        })
-      });
-
-      const data = await res.json();
-      if (data.status === "success" && data.photoUrl) {
-        return data.photoUrl;
-      } else {
-        throw new Error(data.message || "Upload failed");
-      }
-    }
-
-    function seedDefaultSchedule() {
-      schedule = {};
-      DAYS.forEach(day => {
-        schedule[day] = {
-          "50 Area": { "50 AM": "c1", "50 PM": "c2", "51": "c4", "5 AM": "l1", "5 MID": "l2", "5 PM": "l3" },
-          "60 Area": { "60 AM": "c2", "60 PM": "c3", "61": "c4", "CYM": "c5", "8 AM": "l2", "8 MID": "l3", "8 PM": "l4" },
-          "80 Area": { "80 AM": "c4", "80 PM": "c1", "81": "c3", "8 AM": "l2", "8 MID": "l3", "8 PM": "l4" },
-          "Base": { "Base AM 1": "c1", "Base AM 2": "c2", "Base MID 1": "c3", "Base MID 2": "c4", "Base PM": "c5", "Base Lead AM": "l5", "Base Lead PM": "l6" },
-          "Deployment": { 
-            "Deploy AM": "c6", 
-            "Deploy MID 1": "c1", 
-            "Deploy MID 2": "c3", 
-            "Deploy PM": "c4", 
-            "Event Coordinator": "c2", 
-            "Event Leader": "" 
+    // Sample Data for Display Areas and Performers
+    const displayAreas = [
+      {
+        id: "main-stage",
+        title: "Main Stage",
+        subtitle: "Headliners & Evening Performances",
+        items: [
+          {
+            name: "Aura & The Echoes",
+            role: "Live Set • Electronic Synth",
+            time: "08:00 PM - 09:30 PM",
+            image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1000&q=80",
+            status: "NEXT UP"
+          },
+          {
+            name: "Neon Horizon",
+            role: "Headliner • Cyber-Pop",
+            time: "10:00 PM - 11:45 PM",
+            image: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=1000&q=80",
+            status: "FEATURED"
+          },
+          {
+            name: "Solaris Duo",
+            role: "Closing Set • Ambient Beats",
+            time: "12:00 AM - 01:30 AM",
+            image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=1000&q=80",
+            status: "LATE NIGHT"
           }
-        };
-      });
-    }
-
-    async function loadAllData() {
-      try {
-        const res = await fetch(GOOGLE_SHEET_API);
-        const data = await res.json();
-
-        if (data && data.schedule && data.coords && data.leads) {
-          COORDINATORS_ROSTER = data.coords.length ? data.coords : [...DEFAULT_COORDINATORS];
-          LEADERS_ROSTER = data.leads.length ? data.leads : [...DEFAULT_LEADERS];
-          schedule = data.schedule;
-
-          DAYS.forEach(day => {
-            if (schedule[day]) {
-              const a60 = schedule[day]["60 Area"] || {};
-              const a80 = schedule[day]["80 Area"] || {};
-              LINKED_LEADER_SLOTS.forEach(slot => {
-                const val = a60[slot] || a80[slot] || "";
-                if (!schedule[day]["60 Area"]) schedule[day]["60 Area"] = {};
-                if (!schedule[day]["80 Area"]) schedule[day]["80 Area"] = {};
-                schedule[day]["60 Area"][slot] = val;
-                schedule[day]["80 Area"][slot] = val;
-              });
-            }
-          });
-
-          localStorage.setItem(STORAGE_BACKUP_KEY, JSON.stringify(data));
-          return;
-        }
-      } catch (err) {
-        console.warn("Could not reach Google Sheets endpoint, using local backup...", err);
+        ]
+      },
+      {
+        id: "acoustic-lounge",
+        title: "Acoustic Lounge",
+        subtitle: "Intimate Unplugged Sessions",
+        items: [
+          {
+            name: "Elena Rostova",
+            role: "Solo Cello & Vocals",
+            time: "07:30 PM - 08:30 PM",
+            image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=1000&q=80",
+            status: "LIVE NOW"
+          },
+          {
+            name: "The Timber Collective",
+            role: "Folk & Acoustic Quartet",
+            time: "09:00 PM - 10:15 PM",
+            image: "https://images.unsplash.com/photo-1465847899084-d164df4dedc6?auto=format&fit=crop&w=1000&q=80",
+            status: "NEXT UP"
+          },
+          {
+            name: "Marcus Vance",
+            role: "Classical Guitar",
+            time: "10:45 PM - 11:30 PM",
+            image: "https://images.unsplash.com/photo-1510915361894-db8b60106cb1?auto=format&fit=crop&w=1000&q=80",
+            status: "UPCOMING"
+          }
+        ]
+      },
+      {
+        id: "club-dome",
+        title: "The Dynamic Dome",
+        subtitle: "High Energy Visuals & Bass",
+        items: [
+          {
+            name: "KAIRO",
+            role: "Deep House & Techno",
+            time: "09:00 PM - 11:00 PM",
+            image: "https://images.unsplash.com/photo-1574391884720-bbc3740c59d1?auto=format&fit=crop&w=1000&q=80",
+            status: "LIVE NOW"
+          },
+          {
+            name: "Valkyrie",
+            role: "Drum & Bass Showcase",
+            time: "11:00 PM - 01:00 AM",
+            image: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&w=1000&q=80",
+            status: "NEXT UP"
+          },
+          {
+            name: "SubZero",
+            role: "Dubstep / Visual Experience",
+            time: "01:00 AM - 03:00 AM",
+            image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1000&q=80",
+            status: "LATE NIGHT"
+          }
+        ]
       }
+    ];
 
-      const localBackup = localStorage.getItem(STORAGE_BACKUP_KEY);
-      if (localBackup) {
-        const data = JSON.parse(localBackup);
-        COORDINATORS_ROSTER = data.coords || [...DEFAULT_COORDINATORS];
-        LEADERS_ROSTER = data.leads || [...DEFAULT_LEADERS];
-        schedule = data.schedule || {};
-      } else {
-        COORDINATORS_ROSTER = [...DEFAULT_COORDINATORS];
-        LEADERS_ROSTER = [...DEFAULT_LEADERS];
-        seedDefaultSchedule();
-      }
+    // State Variables
+    let currentAreaIndex = 0;
+    let transitionDelay = 10; // in seconds
+    let secondsRemaining = transitionDelay;
+    let timerInterval = null;
+
+    // DOM Elements
+    const tilesContainer = document.getElementById('tiles-container');
+    const areaTitle = document.getElementById('area-title');
+    const areaSubtitle = document.getElementById('area-subtitle');
+    const timerDisplay = document.getElementById('timer-display');
+    const areaDotsContainer = document.getElementById('area-dots');
+    
+    // Modal Elements
+    const settingsModal = document.getElementById('settings-modal');
+    const settingsCard = document.getElementById('settings-card');
+    const openSettingsBtn = document.getElementById('open-settings');
+    const closeSettingsBtn = document.getElementById('close-settings');
+    const transitionSlider = document.getElementById('transition-slider');
+    const sliderValueDisplay = document.getElementById('slider-value');
+
+    // Render Navigation Dots
+    function renderDots() {
+      areaDotsContainer.innerHTML = displayAreas.map((area, idx) => `
+        <div class="flex items-center gap-2">
+          <div class="h-2.5 rounded-full transition-all duration-500 ${idx === currentAreaIndex ? 'w-8 bg-indigo-500' : 'w-2.5 bg-slate-800'}"></div>
+        </div>
+      `).join('');
     }
 
-    // Ensure state inputs match current memory before persisting
-    function syncModalDataToMemory() {
-      document.querySelectorAll("#coordList .roster-row").forEach(row => {
-        const id = row.dataset.id;
-        const val = row.querySelector(".coord-name-input").value.trim();
-        const item = COORDINATORS_ROSTER.find(x => x.id === id);
-        if (item) item.name = val;
-      });
+    // Render Tiles with Enhanced Visual Focus and Animation Classes
+    function renderArea(index) {
+      const area = displayAreas[index];
+      areaTitle.textContent = area.title;
+      areaSubtitle.textContent = area.subtitle;
+      renderDots();
 
-      document.querySelectorAll("#leadList .roster-row").forEach(row => {
-        const id = row.dataset.id;
-        const val = row.querySelector(".lead-name-input").value.trim();
-        const item = LEADERS_ROSTER.find(x => x.id === id);
-        if (item) item.name = val;
-      });
-    }
+      // Clear existing content
+      tilesContainer.innerHTML = '';
 
-    async function saveAllData() {
-      syncModalDataToMemory();
+      // Generate Card HTML with Edge-to-Edge Photo Focus
+      area.items.forEach((item, idx) => {
+        const tile = document.createElement('div');
+        tile.className = `tile-card tile-enter relative rounded-3xl overflow-hidden border border-slate-800/80 bg-slate-900 shadow-2xl flex flex-col justify-end group cursor-pointer`;
+        tile.style.transitionDelay = `${idx * 120}ms`; // Staggered entry animation delay
 
-      const payload = {
-        coords: COORDINATORS_ROSTER,
-        leads: LEADERS_ROSTER,
-        schedule: schedule
-      };
+        tile.innerHTML = `
+          <!-- Full Card Background Image -->
+          <div class="absolute inset-0 z-0 overflow-hidden">
+            <img src="${item.image}" alt="${item.name}" class="tile-bg-photo w-full h-full object-cover object-center filter brightness-90 contrast-105">
+            <!-- Gradient Overlay for Contrast & Text Legibility -->
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
+          </div>
 
-      localStorage.setItem(STORAGE_BACKUP_KEY, JSON.stringify(payload));
+          <!-- Top Badge / Status -->
+          <div class="absolute top-5 left-5 z-10 flex gap-2">
+            <span class="px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-slate-950/60 backdrop-blur-md border border-white/10 text-indigo-300 shadow-md">
+              ${item.status}
+            </span>
+          </div>
 
-      const saveBtn = document.getElementById("saveSetupBtn");
-      saveBtn.disabled = true;
-      saveBtn.textContent = "Saving to Google Sheet...";
-
-      try {
-        await fetch(GOOGLE_SHEET_API, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(payload)
-        });
-        saveBtn.textContent = "Saved Successfully!";
-      } catch (err) {
-        console.error("Save to Google Sheet failed:", err);
-        alert("Saved locally, but could not sync to Google Sheets.");
-      } finally {
-        setTimeout(() => {
-          saveBtn.disabled = false;
-          saveBtn.textContent = "Save & Apply Changes";
-          document.getElementById("setupModal").classList.remove("open");
-          startCycle();
-        }, 400);
-      }
-    }
-
-    function getToday() {
-      return DAYS[new Date().getDay()];
-    }
-
-    function getGridClass(count) {
-      if (count === 2) return "grid-2";
-      if (count === 4) return "grid-4";
-      if (count === 5) return "grid-5";
-      return "grid-3";
-    }
-
-    function findPerson(identifier) {
-      if (!identifier) return null;
-      // Search by ID first
-      let found = COORDINATORS_ROSTER.find(p => p.id === identifier) || LEADERS_ROSTER.find(p => p.id === identifier);
-      if (found) return found;
-
-      // Fallback Search by Name (in case legacy saved data stored plain text names)
-      return COORDINATORS_ROSTER.find(p => p.name.toLowerCase() === identifier.toLowerCase()) || 
-             LEADERS_ROSTER.find(p => p.name.toLowerCase() === identifier.toLowerCase());
-    }
-
-    function normalizeSlot(item) {
-      if (typeof item === "string") return { key: item, label: item };
-      return item;
-    }
-
-    function buildGridHTML(type, slots, activeAssignments) {
-      if (!slots || slots.length === 0) return "";
-      const normalized = slots.map(normalizeSlot);
-      const gridClass = getGridClass(normalized.length);
-      const badgeClass = type;
-
-      const cardsHTML = normalized.map(item => {
-        const personId = activeAssignments[item.key];
-        const person = findPerson(personId);
-        const nameText = person ? person.name : "Unassigned";
-        const unassignedClass = person ? "" : "unassigned";
-        const photoSrc = (person && person.photo) ? person.photo : DEFAULT_AVATAR;
-        const imgStyle = person ? `src="${photoSrc}"` : `style="display:none;"`;
-
-        return `
-          <div class="slot-card">
-            <div class="slot-badge ${badgeClass}">${item.label}</div>
-            <img class="slot-avatar" ${imgStyle}>
-            <div class="slot-name ${unassignedClass}">${nameText}</div>
+          <!-- Bottom Card Content -->
+          <div class="relative z-10 p-6 flex flex-col justify-end">
+            <span class="text-sm font-semibold text-indigo-400 mb-1 flex items-center gap-1.5">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              ${item.time}
+            </span>
+            <h3 class="text-2xl font-extrabold text-white tracking-tight leading-tight group-hover:text-indigo-200 transition-colors">
+              ${item.name}
+            </h3>
+            <p class="text-sm font-medium text-slate-300/90 mt-1">
+              ${item.role}
+            </p>
           </div>
         `;
-      }).join("");
 
-      const titleMap = { coord: "Coordinators", leader: "Leaders", event: "Events & Specials" };
-      const titleClassMap = { coord: "coords", leader: "leaders", event: "events" };
+        tilesContainer.appendChild(tile);
 
-      return `
-        <div class="section-group">
-          <div class="section-title ${titleClassMap[type]}">${titleMap[type]}</div>
-          <div class="slot-grid ${gridClass}">${cardsHTML}</div>
-        </div>
-      `;
+        // Trigger entrance transition on next frame
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            tile.classList.remove('tile-enter');
+            tile.classList.add('tile-active');
+          }, 50);
+        });
+      });
     }
 
-    function renderDisplay(areaIdx) {
-      const today = getToday();
-      const area = AREAS[areaIdx];
-      document.getElementById("dayPill").textContent = today;
-      document.getElementById("areaTitle").textContent = area;
-
-      document.querySelectorAll(".area-pill").forEach(p => {
-        p.classList.toggle("active", p.dataset.area === area);
+    // Transition to Next Area with Smooth Exit Animation
+    function nextArea() {
+      const activeTiles = tilesContainer.querySelectorAll('.tile-card');
+      
+      // Apply exit animations with reverse staggering
+      activeTiles.forEach((tile, idx) => {
+        setTimeout(() => {
+          tile.classList.remove('tile-active');
+          tile.classList.add('tile-exit');
+        }, (activeTiles.length - 1 - idx) * 80);
       });
 
-      const stage = document.getElementById("stage");
-      stage.classList.add("fading");
-
+      // Wait for exit animation to complete before rendering new area
       setTimeout(() => {
-        const config = AREA_CONFIG[area];
-        const dayAreaAssignments = (schedule[today] && schedule[today][area]) || {};
-        let contentHTML = "";
+        currentAreaIndex = (currentAreaIndex + 1) % displayAreas.length;
+        renderArea(currentAreaIndex);
+        resetTimer();
+      }, 600);
+    }
 
-        if (config.coordinators && config.coordinators.length > 0) {
-          contentHTML += buildGridHTML("coord", config.coordinators, dayAreaAssignments);
+    // Timer Logic
+    function startTimer() {
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        secondsRemaining--;
+        timerDisplay.textContent = `${secondsRemaining}s`;
+
+        if (secondsRemaining <= 0) {
+          nextArea();
         }
-        if (config.leaders && config.leaders.length > 0) {
-          contentHTML += buildGridHTML("leader", config.leaders, dayAreaAssignments);
-        }
-        if (config.optionalEvents && config.optionalEvents.length > 0) {
-          const activeEventSlots = config.optionalEvents
-            .filter(e => {
-              const assignedId = dayAreaAssignments[e.key];
-              return assignedId && assignedId.trim() !== "";
-            });
-
-          if (activeEventSlots.length > 0) {
-            contentHTML += buildGridHTML("event", activeEventSlots, dayAreaAssignments);
-          }
-        }
-
-        stage.innerHTML = contentHTML;
-        stage.classList.remove("fading");
-      }, 300);
+      }, 1000);
     }
 
-    function startCycle() {
-      clearInterval(slideTimer);
-      clearInterval(progressTimer);
-
-      renderDisplay(currentAreaIndex);
-      progressStart = Date.now();
-
-      progressTimer = setInterval(() => {
-        const pct = Math.min(100, ((Date.now() - progressStart) / ROTATION_MS) * 100);
-        document.getElementById("progressBar").style.width = pct + "%";
-      }, 50);
-
-      slideTimer = setInterval(() => {
-        currentAreaIndex = (currentAreaIndex + 1) % AREAS.length;
-        renderDisplay(currentAreaIndex);
-        progressStart = Date.now();
-      }, ROTATION_MS);
+    function resetTimer() {
+      secondsRemaining = transitionDelay;
+      timerDisplay.textContent = `${secondsRemaining}s`;
     }
 
-    /* Modal Setup Handlers */
-    function refreshScheduleView() {
-      document.querySelectorAll("#setupDays .pill-btn").forEach(p => {
-        p.classList.toggle("active", p.dataset.day === setupSelectedDay);
-      });
-      document.querySelectorAll("#setupAreas .pill-btn").forEach(p => {
-        p.classList.toggle("active", p.dataset.area === setupSelectedArea);
-      });
-
-      const container = document.getElementById("setupSlotsContainer");
-      const config = AREA_CONFIG[setupSelectedArea];
-      const dayAreaAssignments = (schedule[setupSelectedDay] && schedule[setupSelectedDay][setupSelectedArea]) || {};
-
-      function buildSlotRows(slots, pool, labelColor, isLinkedLeaders = false) {
-        return slots.map(normalizeSlot).map(item => {
-          const currentVal = dayAreaAssignments[item.key] || "";
-          const options = [`<option value="">-- Unassigned --</option>`].concat(
-            pool.map(m => `<option value="${m.id}" ${m.id === currentVal ? "selected" : ""}>${m.name}</option>`)
-          ).join("");
-
-          return `
-            <div class="assignment-row">
-              <div class="assignment-label" style="color:${labelColor};">
-                ${item.label}
-              </div>
-              <select class="assignment-select" data-slot="${item.key}" data-linked="${isLinkedLeaders}">${options}</select>
-            </div>
-          `;
-        }).join("");
-      }
-
-      let modalHTML = "";
-      if (config.coordinators && config.coordinators.length) {
-        modalHTML += `<div style="font-size:1.3rem; font-weight:800; color:var(--coord-color); margin-top:8px;">Coordinators</div>`;
-        modalHTML += buildSlotRows(config.coordinators, COORDINATORS_ROSTER, "var(--coord-color)");
-      }
-      if (config.leaders && config.leaders.length) {
-        const isLinked = (setupSelectedArea === "60 Area" || setupSelectedArea === "80 Area");
-        const linkedNote = isLinked 
-          ? `<span style="font-size: 0.85rem; font-weight: 700; color: #0c1824; background: var(--lead-color); padding: 3px 10px; border-radius: 999px; margin-left: 10px;">Linked with ${setupSelectedArea === "60 Area" ? "80 Area" : "60 Area"}</span>`
-          : "";
-
-        modalHTML += `<div style="font-size:1.3rem; font-weight:800; color:var(--lead-color); margin-top:8px; display:flex; align-items:center;">Leaders ${linkedNote}</div>`;
-        modalHTML += buildSlotRows(config.leaders, LEADERS_ROSTER, "var(--lead-color)", isLinked);
-      }
-      if (config.optionalEvents && config.optionalEvents.length) {
-        modalHTML += `<div style="font-size:1.3rem; font-weight:800; color:var(--event-color); margin-top:8px;">Optional Events & Specials</div>`;
-        modalHTML += buildSlotRows(
-          config.optionalEvents.map(e => e.key),
-          [...COORDINATORS_ROSTER, ...LEADERS_ROSTER],
-          "var(--event-color)"
-        );
-      }
-
-      container.innerHTML = modalHTML;
-
-      // Event listeners for select changes
-      container.querySelectorAll(".assignment-select").forEach(sel => {
-        sel.addEventListener("change", (e) => {
-          const slot = e.target.dataset.slot;
-          const val = e.target.value;
-          const isLinked = e.target.dataset.linked === "true";
-
-          if (!schedule[setupSelectedDay]) schedule[setupSelectedDay] = {};
-          if (!schedule[setupSelectedDay][setupSelectedArea]) schedule[setupSelectedDay][setupSelectedArea] = {};
-
-          schedule[setupSelectedDay][setupSelectedArea][slot] = val;
-
-          // Mirror changes if linked between 60 & 80 Areas
-          if (isLinked) {
-            const partnerArea = setupSelectedArea === "60 Area" ? "80 Area" : "60 Area";
-            if (!schedule[setupSelectedDay][partnerArea]) schedule[setupSelectedDay][partnerArea] = {};
-            schedule[setupSelectedDay][partnerArea][slot] = val;
-          }
-        });
-      });
-    }
-
-    function renderRosterLists() {
-      // 1. Coordinators
-      const coordContainer = document.getElementById("coordList");
-      coordContainer.innerHTML = COORDINATORS_ROSTER.map(c => `
-        <div class="roster-row" data-id="${c.id}">
-          <img class="row-thumb" src="${c.photo || DEFAULT_AVATAR}">
-          <input type="text" class="roster-input coord-name-input" value="${c.name}">
-          <label class="upload-btn-label">
-            📷 Change
-            <input type="file" class="coord-file-input" accept="image/*" style="display:none;">
-          </label>
-          <button class="roster-delete-btn del-coord-btn">✕</button>
-        </div>
-      `).join("");
-
-      // 2. Leaders
-      const leadContainer = document.getElementById("leadList");
-      leadContainer.innerHTML = LEADERS_ROSTER.map(l => `
-        <div class="roster-row" data-id="${l.id}">
-          <img class="row-thumb" src="${l.photo || DEFAULT_AVATAR}">
-          <input type="text" class="roster-input lead-name-input" value="${l.name}">
-          <label class="upload-btn-label">
-            📷 Change
-            <input type="file" class="lead-file-input" accept="image/*" style="display:none;">
-          </label>
-          <button class="roster-delete-btn del-lead-btn">✕</button>
-        </div>
-      `).join("");
-
-      // Attach Coordinators events
-      coordContainer.querySelectorAll(".coord-name-input").forEach(input => {
-        input.addEventListener("input", (e) => {
-          const id = e.target.closest(".roster-row").dataset.id;
-          const item = COORDINATORS_ROSTER.find(x => x.id === id);
-          if (item) item.name = e.target.value;
-        });
-      });
-
-      coordContainer.querySelectorAll(".coord-file-input").forEach(input => {
-        input.addEventListener("change", async (e) => {
-          const file = e.target.files[0];
-          if (!file) return;
-          const row = e.target.closest(".roster-row");
-          const img = row.querySelector(".row-thumb");
-          img.style.opacity = "0.4";
-
-          try {
-            const url = await uploadPhotoToDrive(file);
-            const item = COORDINATORS_ROSTER.find(x => x.id === row.dataset.id);
-            if (item) item.photo = url;
-            img.src = url;
-          } catch (err) {
-            alert("Failed to upload photo: " + err.message);
-          } finally {
-            img.style.opacity = "1";
-          }
-        });
-      });
-
-      coordContainer.querySelectorAll(".del-coord-btn").forEach(btn => {
-        btn.addEventListener("click", (e) => {
-          const id = e.target.closest(".roster-row").dataset.id;
-          COORDINATORS_ROSTER = COORDINATORS_ROSTER.filter(x => x.id !== id);
-          renderRosterLists();
-        });
-      });
-
-      // Attach Leaders events
-      leadContainer.querySelectorAll(".lead-name-input").forEach(input => {
-        input.addEventListener("input", (e) => {
-          const id = e.target.closest(".roster-row").dataset.id;
-          const item = LEADERS_ROSTER.find(x => x.id === id);
-          if (item) item.name = e.target.value;
-        });
-      });
-
-      leadContainer.querySelectorAll(".lead-file-input").forEach(input => {
-        input.addEventListener("change", async (e) => {
-          const file = e.target.files[0];
-          if (!file) return;
-          const row = e.target.closest(".roster-row");
-          const img = row.querySelector(".row-thumb");
-          img.style.opacity = "0.4";
-
-          try {
-            const url = await uploadPhotoToDrive(file);
-            const item = LEADERS_ROSTER.find(x => x.id === row.dataset.id);
-            if (item) item.photo = url;
-            img.src = url;
-          } catch (err) {
-            alert("Failed to upload photo: " + err.message);
-          } finally {
-            img.style.opacity = "1";
-          }
-        });
-      });
-
-      leadContainer.querySelectorAll(".del-lead-btn").forEach(btn => {
-        btn.addEventListener("click", (e) => {
-          const id = e.target.closest(".roster-row").dataset.id;
-          LEADERS_ROSTER = LEADERS_ROSTER.filter(x => x.id !== id);
-          renderRosterLists();
-        });
-      });
-    }
-
-    // Modal Navigation and Interactivity
-    document.querySelectorAll(".tab-btn").forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        document.querySelectorAll(".tab-btn").forEach(t => t.classList.remove("active"));
-        document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
-
-        e.target.classList.add("active");
-        const tabId = e.target.dataset.tab;
-        document.getElementById(tabId).classList.add("active");
-
-        if (tabId === "tab-roster") renderRosterLists();
-        if (tabId === "tab-schedule") refreshScheduleView();
-      });
+    // Settings Modal Controllers
+    openSettingsBtn.addEventListener('click', () => {
+      settingsModal.classList.remove('opacity-0', 'pointer-events-none');
+      settingsCard.classList.remove('scale-95');
+      settingsCard.classList.add('scale-100');
     });
 
-    document.querySelectorAll("#setupDays .pill-btn").forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        setupSelectedDay = e.target.dataset.day;
-        refreshScheduleView();
-      });
+    closeSettingsBtn.addEventListener('click', () => {
+      // Save setting value
+      transitionDelay = parseInt(transitionSlider.value, 10);
+      resetTimer();
+
+      // Close modal
+      settingsModal.classList.add('opacity-0', 'pointer-events-none');
+      settingsCard.classList.remove('scale-100');
+      settingsCard.classList.add('scale-95');
     });
 
-    document.querySelectorAll("#setupAreas .pill-btn").forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        setupSelectedArea = e.target.dataset.area;
-        refreshScheduleView();
-      });
+    transitionSlider.addEventListener('input', (e) => {
+      sliderValueDisplay.textContent = `${e.target.value} seconds`;
     });
 
-    // Handle Uploads for New Staff Controls
-    document.getElementById("newCoordFile").addEventListener("change", async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const preview = document.getElementById("newCoordPreview");
-      preview.style.opacity = "0.4";
-      try {
-        tempCoordPhoto = await uploadPhotoToDrive(file);
-        preview.src = tempCoordPhoto;
-      } catch (err) {
-        alert("Failed to upload photo: " + err.message);
-      } finally {
-        preview.style.opacity = "1";
-      }
-    });
-
-    document.getElementById("newLeadFile").addEventListener("change", async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const preview = document.getElementById("newLeadPreview");
-      preview.style.opacity = "0.4";
-      try {
-        tempLeadPhoto = await uploadPhotoToDrive(file);
-        preview.src = tempLeadPhoto;
-      } catch (err) {
-        alert("Failed to upload photo: " + err.message);
-      } finally {
-        preview.style.opacity = "1";
-      }
-    });
-
-    document.getElementById("addCoordBtn").addEventListener("click", () => {
-      const nameInput = document.getElementById("newCoordName");
-      const name = nameInput.value.trim();
-      if (!name) return alert("Please enter a coordinator name.");
-
-      COORDINATORS_ROSTER.push({
-        id: "c_" + Date.now(),
-        name: name,
-        photo: tempCoordPhoto
-      });
-
-      nameInput.value = "";
-      tempCoordPhoto = DEFAULT_AVATAR;
-      document.getElementById("newCoordPreview").src = DEFAULT_AVATAR;
-      renderRosterLists();
-    });
-
-    document.getElementById("addLeadBtn").addEventListener("click", () => {
-      const nameInput = document.getElementById("newLeadName");
-      const name = nameInput.value.trim();
-      if (!name) return alert("Please enter a leader name.");
-
-      LEADERS_ROSTER.push({
-        id: "l_" + Date.now(),
-        name: name,
-        photo: tempLeadPhoto
-      });
-
-      nameInput.value = "";
-      tempLeadPhoto = DEFAULT_AVATAR;
-      document.getElementById("newLeadPreview").src = DEFAULT_AVATAR;
-      renderRosterLists();
-    });
-
-    // Footer Nav manual switching
-    document.querySelectorAll(".area-pill").forEach((pill, idx) => {
-      pill.addEventListener("click", () => {
-        currentAreaIndex = idx;
-        startCycle();
-      });
-    });
-
-    // Admin Modal Open / Close / Save
-    document.getElementById("openSetup").addEventListener("click", () => {
-      refreshScheduleView();
-      document.getElementById("setupModal").classList.add("open");
-    });
-
-    document.getElementById("closeSetupBtn").addEventListener("click", () => {
-      document.getElementById("setupModal").classList.remove("open");
-    });
-
-    document.getElementById("saveSetupBtn").addEventListener("click", saveAllData);
-
-    // Initialization
-    async function init() {
-      await loadAllData();
-      startCycle();
-    }
-
-    init();
+    // Initialize Page
+    renderArea(currentAreaIndex);
+    startTimer();
   </script>
 </body>
 </html>
