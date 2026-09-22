@@ -769,7 +769,26 @@
       }
     }
 
+    // Ensure state inputs match current memory before persisting
+    function syncModalDataToMemory() {
+      document.querySelectorAll("#coordList .roster-row").forEach(row => {
+        const id = row.dataset.id;
+        const val = row.querySelector(".coord-name-input").value.trim();
+        const item = COORDINATORS_ROSTER.find(x => x.id === id);
+        if (item) item.name = val;
+      });
+
+      document.querySelectorAll("#leadList .roster-row").forEach(row => {
+        const id = row.dataset.id;
+        const val = row.querySelector(".lead-name-input").value.trim();
+        const item = LEADERS_ROSTER.find(x => x.id === id);
+        if (item) item.name = val;
+      });
+    }
+
     async function saveAllData() {
+      syncModalDataToMemory();
+
       const payload = {
         coords: COORDINATORS_ROSTER,
         leads: LEADERS_ROSTER,
@@ -789,19 +808,16 @@
           body: JSON.stringify(payload)
         });
         saveBtn.textContent = "Saved Successfully!";
+      } catch (err) {
+        console.error("Save to Google Sheet failed:", err);
+        alert("Saved locally, but could not sync to Google Sheets.");
+      } finally {
         setTimeout(() => {
           saveBtn.disabled = false;
           saveBtn.textContent = "Save & Apply Changes";
           document.getElementById("setupModal").classList.remove("open");
           startCycle();
-        }, 600);
-      } catch (err) {
-        console.error("Save to Google Sheet failed:", err);
-        alert("Saved locally, but could not sync to Google Sheets. Check your backend deployment access permissions.");
-        saveBtn.disabled = false;
-        saveBtn.textContent = "Save & Apply Changes";
-        document.getElementById("setupModal").classList.remove("open");
-        startCycle();
+        }, 400);
       }
     }
 
@@ -816,8 +832,15 @@
       return "grid-3";
     }
 
-    function findPerson(id) {
-      return COORDINATORS_ROSTER.find(p => p.id === id) || LEADERS_ROSTER.find(p => p.id === id);
+    function findPerson(identifier) {
+      if (!identifier) return null;
+      // Search by ID first
+      let found = COORDINATORS_ROSTER.find(p => p.id === identifier) || LEADERS_ROSTER.find(p => p.id === identifier);
+      if (found) return found;
+
+      // Fallback Search by Name (in case legacy saved data stored plain text names)
+      return COORDINATORS_ROSTER.find(p => p.name.toLowerCase() === identifier.toLowerCase()) || 
+             LEADERS_ROSTER.find(p => p.name.toLowerCase() === identifier.toLowerCase());
     }
 
     function normalizeSlot(item) {
