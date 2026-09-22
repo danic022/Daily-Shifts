@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Area Operations Roster - Dual Database</title>
+  <style>
+    :root {
+      --bg: #090e17;
+      --surface: #121c2c;
+      --surface-subtle: #172437;
+      --border: #22344d;
+      --accent: #38bdf8;
+      --accent-badge: rgba(56, 189, 248, 0.15);
+      --coord-color: #38bdf8;
+      --lead-color: #f59e0b;
+      --lead-badge: rgba(245, 158, 11, 0.15);
+      --event-color: #c084fc;
+      --event-badge: rgba(192, 132, 252, 0.15);
+      --danger-color: #ef4444;
+      --text: #f8fafc;
+      --subtext: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      width: 1080px;
+      height: 1920px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 60px 48px 50px;
+      position: relative;
+    }
+
+    /* Top Section */
+    .header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      text-align: center;
+    }
+    .day-pill {
+      font-size: 1.4rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      border: 2px solid var(--accent);
+      padding: 6px 26px;
+      border-radius: 999px;
+      background: var(--accent-badge);
+    }
+    .area-title {
+      font-size: 4.2rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    /* Content Stage */
+    .stage {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 26px;
+      width: 100%;
+      padding: 10px 0;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    .stage.fading {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    .section-group {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .section-title {
+      font-size: 1.65rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .section-title.coords { color: var(--coord-color); }
+    .section-title.leaders { color: var(--lead-color); }
+    .section-title.events { color: var(--event-color); }
+    .section-title::after {
+      content: "";
+      flex: 1;
+      height: 2px;
+      background: var(--border);
+    }
+
+    /* Grids */
+    .slot-grid {
+      display: grid;
+      gap: 16px;
+    }
+    .grid-2 { grid-template-columns: repeat(2, 1fr); max-width: 650px; margin: 0 auto; width: 100%; }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+    .grid-5 { 
+      display: flex; 
+      flex-wrap: wrap; 
+      justify-content: center; 
+      gap: 16px; 
+    }
+    .grid-5 .slot-card {
+      width: calc(33.333% - 12px);
+    }
+
+    .slot-card {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 22px;
+      padding: 20px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.4);
+    }
+    .slot-badge {
+      font-size: 1.2rem;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 5px 16px;
+      border-radius: 999px;
+      margin-bottom: 14px;
+    }
+    .slot-badge.coord {
+      color: var(--coord-color);
+      background: var(--accent-badge);
+      border: 1px solid var(--coord-color);
+    }
+    .slot-badge.leader {
+      color: var(--lead-color);
+      background: var(--lead-badge);
+      border: 1px solid var(--lead-color);
+    }
+    .slot-badge.event {
+      color: var(--event-color);
+      background: var(--event-badge);
+      border: 1px solid var(--event-color);
+    }
+    .slot-avatar {
+      width: 125px;
+      height: 125px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-bottom: 12px;
+      border: 4px solid var(--border);
+      background: #1e293b;
+    }
+    .slot-name {
+      font-size: 1.55rem;
+      font-weight: 800;
+      line-height: 1.2;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .slot-name.unassigned {
+      color: var(--subtext);
+      font-size: 1.2rem;
+      font-weight: 600;
+      font-style: italic;
+    }
+
+    /* Footer */
+    .footer {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      width: 100%;
+    }
+    .area-nav-pills {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+    }
+    .area-pill {
+      padding: 14px 8px;
+      text-align: center;
+      font-size: 1.2rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      color: var(--subtext);
+      border-radius: 12px;
+    }
+    .area-pill.active {
+      background: var(--accent);
+      color: #090e17;
+      border-color: var(--accent);
+      box-shadow: 0 0 18px rgba(56, 189, 248, 0.4);
+    }
+    .progress-bar-wrap {
+      width: 100%;
+      height: 7px;
+      background: var(--border);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      transition: width 0.1s linear;
+    }
+
+    /* Admin Button */
+    .admin-btn {
+      position: absolute;
+      top: 40px;
+      right: 40px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--subtext);
+      font-size: 1.2rem;
+      padding: 10px 20px;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+
+    /* Setup Modal */
+    .modal {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: rgba(9, 14, 23, 0.97);
+      z-index: 50;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+    }
+    .modal.open { display: flex; }
+    .modal-card {
+      width: 100%;
+      max-width: 960px;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 26px;
+      padding: 36px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    /* Top Modal Tabs */
+    .modal-nav-tabs {
+      display: flex;
+      gap: 12px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 16px;
+    }
+    .tab-btn {
+      padding: 12px 24px;
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: var(--subtext);
+      background: transparent;
+      border: 2px solid transparent;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+    .tab-btn.active {
+      background: var(--surface-subtle);
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .tab-content { display: none; flex-direction: column; gap: 20px; }
+    .tab-content.active { display: flex; }
+
+    .pill-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+    .area-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+    .pill-btn {
+      padding: 10px 6px;
+      text-align: center;
+      font-size: 1.05rem;
+      font-weight: 700;
+      background: var(--border);
+      color: var(--subtext);
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .pill-btn.active { background: var(--accent); color: #090e17; }
+    
+    .assignment-row {
+      display: grid;
+      grid-template-columns: 210px 1fr;
+      align-items: center;
+      gap: 16px;
+      background: var(--surface-subtle);
+      padding: 12px 18px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+    .assignment-label { font-size: 1.25rem; font-weight: 800; }
+    .assignment-select {
+      background: #090e17;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+      font-size: 1.2rem;
+      border-radius: 10px;
+      width: 100%;
+    }
+
+    /* Roster Editor Sections */
+    .roster-section-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .roster-table {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 260px;
+      overflow-y: auto;
+      margin-top: 10px;
+    }
+    .roster-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 50px;
+      gap: 10px;
+      align-items: center;
+      background: var(--surface-subtle);
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+    .roster-input {
+      background: #090e17;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      font-size: 1.1rem;
+      border-radius: 8px;
+      width: 100%;
+    }
+    .roster-delete-btn {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid var(--danger-color);
+      color: var(--danger-color);
+      font-size: 1.2rem;
+      font-weight: 800;
+      border-radius: 8px;
+      height: 38px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .add-roster-box {
+      display: grid;
+      grid-template-columns: 1fr 1fr 120px;
+      gap: 10px;
+      background: #090e17;
+      padding: 12px;
+      border-radius: 12px;
+      border: 2px dashed var(--border);
+      align-items: center;
+    }
+
+    .modal-btns { display: flex; gap: 16px; margin-top: 10px; }
+    .btn {
+      flex: 1;
+      padding: 16px;
+      border-radius: 12px;
+      font-size: 1.3rem;
+      font-weight: 800;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-save { background: var(--accent); color: #090e17; }
+    .btn-add { background: #22c55e; color: #090e17; padding: 10px; border-radius: 8px; font-weight: 800; font-size: 1.05rem; border: none; cursor: pointer; }
+    .btn-close { background: var(--border); color: var(--text); }
+  </style>
+</head>
+<body>
+
+  <button class="admin-btn" id="openSetup">⚙ Shift Setup</button>
+
+  <div class="header">
+    <div class="day-pill" id="dayPill">Loading...</div>
+    <div class="area-title" id="areaTitle">Area</div>
+  </div>
+
+  <div class="stage" id="stage"></div>
+
+  <div class="footer">
+    <div class="area-nav-pills" id="navPills">
+      <div class="area-pill" data-area="50 Area">50 Area</div>
+      <div class="area-pill" data-area="60 Area">60 Area</div>
+      <div class="area-pill" data-area="80 Area">80 Area</div>
+      <div class="area-pill" data-area="Base">Base</div>
+      <div class="area-pill" data-area="Deployment">Deployment</div>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+  </div>
+
+  <!-- Setup Modal with Separated Databases -->
+  <div class="modal" id="setupModal">
+    <div class="modal-card">
+      <div class="modal-nav-tabs">
+        <button class="tab-btn active" data-tab="tab-schedule">📅 Shift Scheduling</button>
+        <button class="tab-btn" data-tab="tab-roster">👥 Staff Directories</button>
+      </div>
+
+      <!-- Tab 1: Scheduling -->
+      <div class="tab-content active" id="tab-schedule">
+        <div>
+          <label style="font-size:1.05rem; color:var(--subtext); margin-bottom:6px; display:block;">1. Select Day</label>
+          <div class="pill-row" id="setupDays">
+            <div class="pill-btn" data-day="Sunday">Sun</div>
+            <div class="pill-btn" data-day="Monday">Mon</div>
+            <div class="pill-btn" data-day="Tuesday">Tue</div>
+            <div class="pill-btn" data-day="Wednesday">Wed</div>
+            <div class="pill-btn" data-day="Thursday">Thu</div>
+            <div class="pill-btn" data-day="Friday">Fri</div>
+            <div class="pill-btn" data-day="Saturday">Sat</div>
+          </div>
+        </div>
+
+        <div>
+          <label style="font-size:1.05rem; color:var(--subtext); margin-bottom:6px; display:block;">2. Select Area</label>
+          <div class="area-row" id="setupAreas">
+            <div class="pill-btn" data-area="50 Area">50 Area</div>
+            <div class="pill-btn" data-area="60 Area">60 Area</div>
+            <div class="pill-btn" data-area="80 Area">80 Area</div>
+            <div class="pill-btn" data-area="Base">Base</div>
+            <div class="pill-btn" data-area="Deployment">Deployment</div>
+          </div>
+        </div>
+
+        <div id="setupSlotsContainer" style="display:flex; flex-direction:column; gap:12px;"></div>
+      </div>
+
+      <!-- Tab 2: Separate Databases for Coordinators and Leaders -->
+      <div class="tab-content" id="tab-roster">
+        
+        <!-- Database 1: Coordinators -->
+        <div>
+          <div class="roster-section-title" style="color:var(--coord-color);">
+            <span>🔷 Coordinators Database</span>
+          </div>
+          <div class="add-roster-box">
+            <input type="text" class="roster-input" id="newCoordName" placeholder="Coordinator Name">
+            <input type="text" class="roster-input" id="newCoordPhoto" placeholder="Photo (e.g. photos/name.jpg)">
+            <button class="btn-add" id="addCoordBtn">+ Add Coord</button>
+          </div>
+          <div class="roster-table" id="coordList"></div>
+        </div>
+
+        <!-- Database 2: Leaders -->
+        <div style="margin-top: 14px; border-top: 1px solid var(--border); padding-top: 16px;">
+          <div class="roster-section-title" style="color:var(--lead-color);">
+            <span>🔶 Leaders Database</span>
+          </div>
+          <div class="add-roster-box">
+            <input type="text" class="roster-input" id="newLeadName" placeholder="Leader Name">
+            <input type="text" class="roster-input" id="newLeadPhoto" placeholder="Photo (e.g. photos/name.jpg)">
+            <button class="btn-add" id="addLeadBtn" style="background:var(--lead-color);">+ Add Leader</button>
+          </div>
+          <div class="roster-table" id="leadList"></div>
+        </div>
+
+      </div>
+
+      <div class="modal-btns">
+        <button class="btn btn-close" id="closeSetupBtn">Close</button>
+        <button class="btn btn-save" id="saveSetupBtn">Save & Apply Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const AREAS = ["50 Area", "60 Area", "80 Area", "Base", "Deployment"];
+    const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const ROTATION_MS = 8500;
+
+    const STORAGE_KEY_SCHEDULE = "area_roster_sched_v8";
+    const STORAGE_KEY_COORDS = "roster_coords_v8";
+    const STORAGE_KEY_LEADS = "roster_leads_v8";
+
+    // 1. Separate Default Coordinators Pool
+    const DEFAULT_COORDINATORS = [
+      { id: "c1", name: "Alex Rivera", photo: "photos/alex.jpg" },
+      { id: "c2", name: "Jordan Lee", photo: "photos/jordan.jpg" },
+      { id: "c3", name: "Morgan Smith", photo: "photos/morgan.jpg" },
+      { id: "c4", name: "Taylor Reed", photo: "photos/taylor.jpg" },
+      { id: "c5", name: "Casey Miller", photo: "photos/casey.jpg" },
+      { id: "c6", name: "Dakota Hayes", photo: "photos/dakota.jpg" }
+    ];
+
+    // 2. Separate Default Leaders Pool
+    const DEFAULT_LEADERS = [
+      { id: "l1", name: "Chris Vance", photo: "photos/chris.jpg" },
+      { id: "l2", name: "Sam Patel", photo: "photos/sam.jpg" },
+      { id: "l3", name: "Pat Murphy", photo: "photos/pat.jpg" },
+      { id: "l4", name: "Robin Diaz", photo: "photos/robin.jpg" },
+      { id: "l5", name: "Jamie Chen", photo: "photos/jamie.jpg" },
+      { id: "l6", name: "Quinn Davis", photo: "photos/quinn.jpg" }
+    ];
+
+    let COORDINATORS_ROSTER = [];
+    let LEADERS_ROSTER = [];
+
+    // Area Configuration defining which slot pulls from which database
+    const AREA_CONFIG = {
+      "50 Area": {
+        coordinators: ["50 AM", "50 PM", "51"],
+        leaders: ["5 AM", "5 MID", "5 PM"]
+      },
+      "60 Area": {
+        coordinators: ["60 AM", "60 PM", "61", "CYM"],
+        leaders: ["8 AM", "8 MID", "8 PM"]
+      },
+      "80 Area": {
+        coordinators: ["80 AM", "80 PM", "81"],
+        leaders: ["8 AM", "8 MID", "8 PM"]
+      },
+      "Base": {
+        coordinators: ["Base AM 1", "Base AM 2", "Base MID 1", "Base MID 2", "Base PM"],
+        leaders: ["Base AM", "Base PM"]
+      },
+      "Deployment": {
+        coordinators: ["Deploy AM", "Deploy MID 1", "Deploy MID 2", "Deploy PM"],
+        leaders: [],
+        optionalEvents: [
+          { slot: "Event Coordinator", type: "coord" },
+          { slot: "Event Leader", type: "lead" }
+        ]
+      }
+    };
+
+    let schedule = {};
+    let currentAreaIndex = 0;
+    let slideTimer = null;
+    let progressTimer = null;
+    let progressStart = 0;
+
+    let setupSelectedDay = "Monday";
+    let setupSelectedArea = "50 Area";
+
+    function loadAllData() {
+      // 1. Load Coordinators Database
+      const storedCoords = localStorage.getItem(STORAGE_KEY_COORDS);
+      COORDINATORS_ROSTER = storedCoords ? JSON.parse(storedCoords) : [...DEFAULT_COORDINATORS];
+
+      // 2. Load Leaders Database
+      const storedLeads = localStorage.getItem(STORAGE_KEY_LEADS);
+      LEADERS_ROSTER = storedLeads ? JSON.parse(storedLeads) : [...DEFAULT_LEADERS];
+
+      // 3. Load Schedules
+      const storedSchedule = localStorage.getItem(STORAGE_KEY_SCHEDULE);
+      if (storedSchedule) {
+        schedule = JSON.parse(storedSchedule);
+      } else {
+        schedule = {};
+        DAYS.forEach(day => {
+          schedule[day] = {
+            "50 Area": { "50 AM": "c1", "50 PM": "c2", "51": "c4", "5 AM": "l1", "5 MID": "l2", "5 PM": "l3" },
+            "60 Area": { "60 AM": "c2", "60 PM": "c3", "61": "c4", "CYM": "c5", "8 AM": "l2", "8 MID": "l3", "8 PM": "l4" },
+            "80 Area": { "80 AM": "c4", "80 PM": "c1", "81": "c3", "8 AM": "l3", "8 MID": "l4", "8 PM": "l5" },
+            "Base": { "Base AM 1": "c1", "Base AM 2": "c2", "Base MID 1": "c3", "Base MID 2": "c4", "Base PM": "c5", "Base AM": "l5", "Base PM": "l6" },
+            "Deployment": { 
+              "Deploy AM": "c6", 
+              "Deploy MID 1": "c1", 
+              "Deploy MID 2": "c3", 
+              "Deploy PM": "c4", 
+              "Event Coordinator": "c2", 
+              "Event Leader": "" 
+            }
+          };
+        });
+      }
+    }
+
+    function saveAllData() {
+      localStorage.setItem(STORAGE_KEY_COORDS, JSON.stringify(COORDINATORS_ROSTER));
+      localStorage.setItem(STORAGE_KEY_LEADS, JSON.stringify(LEADERS_ROSTER));
+      localStorage.setItem(STORAGE_KEY_SCHEDULE, JSON.stringify(schedule));
+    }
+
+    function getToday() {
+      return DAYS[new Date().getDay()];
+    }
+
+    function getGridClass(count) {
+      if (count === 2) return "grid-2";
+      if (count === 4) return "grid-4";
+      if (count === 5) return "grid-5";
+      return "grid-3";
+    }
+
+    function findPerson(id) {
+      return COORDINATORS_ROSTER.find(p => p.id === id) || LEADERS_ROSTER.find(p => p.id === id);
+    }
+
+    function buildGridHTML(type, slots, activeAssignments) {
+      if (!slots || slots.length === 0) return "";
+      const gridClass = getGridClass(slots.length);
+      const badgeClass = type;
+
+      const cardsHTML = slots.map(slot => {
+        const personId = activeAssignments[slot];
+        const person = findPerson(personId);
+        const nameText = person ? person.name : "Unassigned";
+        const unassignedClass = person ? "" : "unassigned";
+        const imgStyle = person ? `src="${person.photo}"` : `style="display:none;"`;
+
+        return `
+          <div class="slot-card">
+            <div class="slot-badge ${badgeClass}">${slot}</div>
+            <img class="slot-avatar" ${imgStyle}>
+            <div class="slot-name ${unassignedClass}">${nameText}</div>
+          </div>
+        `;
+      }).join("");
+
+      const titleMap = { coord: "Coordinators", leader: "Leaders", event: "Events & Specials" };
+      const titleClassMap = { coord: "coords", leader: "leaders", event: "events" };
+
+      return `
+        <div class="section-group">
+          <div class="section-title ${titleClassMap[type]}">${titleMap[type]}</div>
+          <div class="slot-grid ${gridClass}">${cardsHTML}</div>
+        </div>
+      `;
+    }
+
+    function renderDisplay(areaIdx) {
+      const today = getToday();
+      const area = AREAS[areaIdx];
+      document.getElementById("dayPill").textContent = today;
+      document.getElementById("areaTitle").textContent = area;
+
+      document.querySelectorAll(".area-pill").forEach(p => {
+        p.classList.toggle("active", p.dataset.area === area);
+      });
+
+      const stage = document.getElementById("stage");
+      stage.classList.add("fading");
+
+      setTimeout(() => {
+        const config = AREA_CONFIG[area];
+        const dayAreaAssignments = (schedule[today] && schedule[today][area]) || {};
+        let contentHTML = "";
+
+        if (config.coordinators && config.coordinators.length > 0) {
+          contentHTML += buildGridHTML("coord", config.coordinators, dayAreaAssignments);
+        }
+        if (config.leaders && config.leaders.length > 0) {
+          contentHTML += buildGridHTML("leader", config.leaders, dayAreaAssignments);
+        }
+        if (config.optionalEvents && config.optionalEvents.length > 0) {
+          const activeEventSlots = config.optionalEvents
+            .map(e => e.slot)
+            .filter(slot => {
+              const assignedId = dayAreaAssignments[slot];
+              return assignedId && assignedId.trim() !== "";
+            });
+
+          if (activeEventSlots.length > 0) {
+            contentHTML += buildGridHTML("event", activeEventSlots, dayAreaAssignments);
+          }
+        }
+
+        stage.innerHTML = contentHTML;
+        stage.classList.remove("fading");
+      }, 300);
+    }
+
+    function startCycle() {
+      clearInterval(slideTimer);
+      clearInterval(progressTimer);
+
+      renderDisplay(currentAreaIndex);
+      progressStart = Date.now();
+
+      progressTimer = setInterval(() => {
+        const pct = Math.min(100, ((Date.now() - progressStart) / ROTATION_MS) * 100);
+        document.getElementById("progressBar").style.width = pct + "%";
+      }, 50);
+
+      slideTimer = setInterval(() => {
+        currentAreaIndex = (currentAreaIndex + 1) % AREAS.length;
+        renderDisplay(currentAreaIndex);
+        progressStart = Date.now();
+      }, ROTATION_MS);
+    }
+
+    /* Modal Setup Handlers */
+    function refreshScheduleView() {
+      document.querySelectorAll("#setupDays .pill-btn").forEach(p => {
+        p.classList.toggle("active", p.dataset.day === setupSelectedDay);
+      });
+      document.querySelectorAll("#setupAreas .pill-btn").forEach(p => {
+        p.classList.toggle("active", p.dataset.area === setupSelectedArea);
+      });
+
+      const container = document.getElementById("setupSlotsContainer");
+      const config = AREA_CONFIG[setupSelectedArea];
+      const dayAreaAssignments = (schedule[setupSelectedDay] && schedule[setupSelectedDay][setupSelectedArea]) || {};
+
+      function buildSlotRows(slots, pool, labelColor) {
+        return slots.map(slot => {
+          const currentVal = dayAreaAssignments[slot] || "";
+          const options = [`<option value="">-- Unassigned --</option>`].concat(
+            pool.map(m => `<option value="${m.id}" ${m.id === currentVal ? "selected" : ""}>${m.name}</option>`)
+          ).join("");
+
+          return `
+            <div class="assignment-row">
+              <div class="assignment-label" style="color:${labelColor};">${slot}</div>
+              <select class="assignment-select" data-slot="${slot}">${options}</select>
+            </div>
+          `;
+        }).join("");
+      }
+
+      let modalHTML = "";
+      if (config.coordinators && config.coordinators.length) {
+        modalHTML += `<div style="font-size:1.3rem; font-weight:800; color:var(--coord-color); margin-top:8px;">Coordinators (Filtered to Coord Pool)</div>`;
+        modalHTML += buildSlotRows(config.coordinators, COORDINATORS_ROSTER, "var(--coord-color)");
+      }
+      if (config.leaders && config.leaders.length) {
+        modalHTML += `<div style="font-size:1.3rem; font-weight:800; color:var(--lead-color); margin-top:8px;">Leaders (Filtered to Leader Pool)</div>`;
+        modalHTML += buildSlotRows(config.leaders, LEADERS_ROSTER, "var(--lead-color)");
+      }
+      if (config.optionalEvents && config.optionalEvents.length) {
+        modalHTML += `<div style="font-size:1.3rem; font-weight:800; color:var(--event-color); margin-top:8px;">Optional Event Coverage</div>`;
+        config.optionalEvents.forEach(evt => {
+          const pool = evt.type === "coord" ? COORDINATORS_ROSTER : LEADERS_ROSTER;
+          const labelColor = evt.type === "coord" ? "var(--coord-color)" : "var(--lead-color)";
+          modalHTML += buildSlotRows([evt.slot], pool, labelColor);
+        });
+      }
+
+      container.innerHTML = modalHTML;
+    }
+
+    // Render Roster Editor for both pools
+    function renderRosterLists() {
+      // 1. Coordinators List
+      const coordContainer = document.getElementById("coordList");
+      coordContainer.innerHTML = "";
+      COORDINATORS_ROSTER.forEach(person => {
+        const row = document.createElement("div");
+        row.className = "roster-row";
+        row.innerHTML = `
+          <input type="text" class="roster-input name-field" value="${person.name}" placeholder="Name">
+          <input type="text" class="roster-input photo-field" value="${person.photo}" placeholder="Photo path">
+          <button class="roster-delete-btn" title="Delete">✕</button>
+        `;
+        row.querySelector(".name-field").addEventListener("input", (e) => person.name = e.target.value);
+        row.querySelector(".photo-field").addEventListener("input", (e) => person.photo = e.target.value);
+        row.querySelector(".roster-delete-btn").addEventListener("click", () => {
+          COORDINATORS_ROSTER = COORDINATORS_ROSTER.filter(p => p.id !== person.id);
+          renderRosterLists();
+          refreshScheduleView();
+        });
+        coordContainer.appendChild(row);
+      });
+
+      // 2. Leaders List
+      const leadContainer = document.getElementById("leadList");
+      leadContainer.innerHTML = "";
+      LEADERS_ROSTER.forEach(person => {
+        const row = document.createElement("div");
+        row.className = "roster-row";
+        row.innerHTML = `
+          <input type="text" class="roster-input name-field" value="${person.name}" placeholder="Name">
+          <input type="text" class="roster-input photo-field" value="${person.photo}" placeholder="Photo path">
+          <button class="roster-delete-btn" title="Delete">✕</button>
+        `;
+        row.querySelector(".name-field").addEventListener("input", (e) => person.name = e.target.value);
+        row.querySelector(".photo-field").addEventListener("input", (e) => person.photo = e.target.value);
+        row.querySelector(".roster-delete-btn").addEventListener("click", () => {
+          LEADERS_ROSTER = LEADERS_ROSTER.filter(p => p.id !== person.id);
+          renderRosterLists();
+          refreshScheduleView();
+        });
+        leadContainer.appendChild(row);
+      });
+    }
+
+    // Tab switcher
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+
+        btn.classList.add("active");
+        document.getElementById(btn.dataset.tab).classList.add("active");
+
+        if (btn.dataset.tab === "tab-schedule") {
+          refreshScheduleView();
+        } else if (btn.dataset.tab === "tab-roster") {
+          renderRosterLists();
+        }
+      });
+    });
+
+    // Add Coordinator Handler
+    document.getElementById("addCoordBtn").addEventListener("click", () => {
+      const nameEl = document.getElementById("newCoordName");
+      const photoEl = document.getElementById("newCoordPhoto");
+      if (!nameEl.value.trim()) return alert("Please enter a Coordinator name");
+
+      COORDINATORS_ROSTER.push({
+        id: "c_" + Date.now(),
+        name: nameEl.value.trim(),
+        photo: photoEl.value.trim() || "photos/default.jpg"
+      });
+
+      nameEl.value = "";
+      photoEl.value = "";
+      renderRosterLists();
+      refreshScheduleView();
+    });
+
+    // Add Leader Handler
+    document.getElementById("addLeadBtn").addEventListener("click", () => {
+      const nameEl = document.getElementById("newLeadName");
+      const photoEl = document.getElementById("newLeadPhoto");
+      if (!nameEl.value.trim()) return alert("Please enter a Leader name");
+
+      LEADERS_ROSTER.push({
+        id: "l_" + Date.now(),
+        name: nameEl.value.trim(),
+        photo: photoEl.value.trim() || "photos/default.jpg"
+      });
+
+      nameEl.value = "";
+      photoEl.value = "";
+      renderRosterLists();
+      refreshScheduleView();
+    });
+
+    document.getElementById("openSetup").addEventListener("click", () => {
+      clearInterval(slideTimer);
+      clearInterval(progressTimer);
+      setupSelectedDay = getToday();
+      setupSelectedArea = AREAS[currentAreaIndex];
+      refreshScheduleView();
+      renderRosterLists();
+      document.getElementById("setupModal").classList.add("open");
+    });
+
+    document.getElementById("setupDays").addEventListener("click", (e) => {
+      if (e.target.dataset.day) {
+        setupSelectedDay = e.target.dataset.day;
+        refreshScheduleView();
+      }
+    });
+
+    document.getElementById("setupAreas").addEventListener("click", (e) => {
+      if (e.target.dataset.area) {
+        setupSelectedArea = e.target.dataset.area;
+        refreshScheduleView();
+      }
+    });
+
+    document.getElementById("saveSetupBtn").addEventListener("click", () => {
+      if (!schedule[setupSelectedDay]) schedule[setupSelectedDay] = {};
+      if (!schedule[setupSelectedDay][setupSelectedArea]) schedule[setupSelectedDay][setupSelectedArea] = {};
+
+      const selects = document.querySelectorAll("#setupSlotsContainer select");
+      selects.forEach(sel => {
+        schedule[setupSelectedDay][setupSelectedArea][sel.dataset.slot] = sel.value;
+      });
+
+      saveAllData();
+      document.getElementById("setupModal").classList.remove("open");
+      startCycle();
+    });
+
+    document.getElementById("closeSetupBtn").addEventListener("click", () => {
+      loadAllData();
+      document.getElementById("setupModal").classList.remove("open");
+      startCycle();
+    });
+
+    loadAllData();
+    startCycle();
+  </script>
+</body>
+</html>
