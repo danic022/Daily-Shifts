@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Area Operations Roster - Dual Database</title>
+  <title>Area Operations Roster - Google Sheets Synced</title>
   <style>
     :root {
       --bg: #090e17;
@@ -235,6 +235,7 @@
       padding: 10px 20px;
       border-radius: 12px;
       cursor: pointer;
+      z-index: 10;
     }
 
     /* Setup Modal */
@@ -338,7 +339,7 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
-      max-height: 260px;
+      max-height: 240px;
       overflow-y: auto;
       margin-top: 10px;
     }
@@ -396,6 +397,7 @@
       cursor: pointer;
     }
     .btn-save { background: var(--accent); color: #090e17; }
+    .btn-save:disabled { opacity: 0.6; cursor: wait; }
     .btn-add { background: #22c55e; color: #090e17; padding: 10px; border-radius: 8px; font-weight: 800; font-size: 1.05rem; border: none; cursor: pointer; }
     .btn-close { background: var(--border); color: var(--text); }
   </style>
@@ -500,15 +502,15 @@
   </div>
 
   <script>
+    // GOOGLE SHEETS WEB APP ENDPOINT
+    const GOOGLE_SHEET_API = "https://script.google.com/macros/s/AKfycbz-I-j7-3ltGxt88DTtVc4kEIk_C-cZ8JtzRWXk8HofbgereLufcvhetjsK5a56HKRObw/exec";
+
     const AREAS = ["50 Area", "60 Area", "80 Area", "Base", "Deployment"];
     const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
     const ROTATION_MS = 8500;
+    const STORAGE_BACKUP_KEY = "area_roster_local_backup_v9";
 
-    const STORAGE_KEY_SCHEDULE = "area_roster_sched_v8";
-    const STORAGE_KEY_COORDS = "roster_coords_v8";
-    const STORAGE_KEY_LEADS = "roster_leads_v8";
-
-    // 1. Separate Default Coordinators Pool
+    // 1. Default Coordinators Database
     const DEFAULT_COORDINATORS = [
       { id: "c1", name: "Alex Rivera", photo: "photos/alex.jpg" },
       { id: "c2", name: "Jordan Lee", photo: "photos/jordan.jpg" },
@@ -518,7 +520,7 @@
       { id: "c6", name: "Dakota Hayes", photo: "photos/dakota.jpg" }
     ];
 
-    // 2. Separate Default Leaders Pool
+    // 2. Default Leaders Database
     const DEFAULT_LEADERS = [
       { id: "l1", name: "Chris Vance", photo: "photos/chris.jpg" },
       { id: "l2", name: "Sam Patel", photo: "photos/sam.jpg" },
@@ -547,14 +549,17 @@
       },
       "Base": {
         coordinators: ["Base AM 1", "Base AM 2", "Base MID 1", "Base MID 2", "Base PM"],
-        leaders: ["Base AM", "Base PM"]
+        leaders: [
+          { key: "Base Lead AM", label: "Base AM" },
+          { key: "Base Lead PM", label: "Base PM" }
+        ]
       },
       "Deployment": {
         coordinators: ["Deploy AM", "Deploy MID 1", "Deploy MID 2", "Deploy PM"],
         leaders: [],
         optionalEvents: [
-          { slot: "Event Coordinator", type: "coord" },
-          { slot: "Event Leader", type: "lead" }
+          { key: "Event Coordinator", label: "Event Coordinator", type: "coord" },
+          { key: "Event Leader", label: "Event Leader", type: "lead" }
         ]
       }
     };
@@ -568,44 +573,93 @@
     let setupSelectedDay = "Monday";
     let setupSelectedArea = "50 Area";
 
-    function loadAllData() {
-      // 1. Load Coordinators Database
-      const storedCoords = localStorage.getItem(STORAGE_KEY_COORDS);
-      COORDINATORS_ROSTER = storedCoords ? JSON.parse(storedCoords) : [...DEFAULT_COORDINATORS];
+    function seedDefaultSchedule() {
+      schedule = {};
+      DAYS.forEach(day => {
+        schedule[day] = {
+          "50 Area": { "50 AM": "c1", "50 PM": "c2", "51": "c4", "5 AM": "l1", "5 MID": "l2", "5 PM": "l3" },
+          "60 Area": { "60 AM": "c2", "60 PM": "c3", "61": "c4", "CYM": "c5", "8 AM": "l2", "8 MID": "l3", "8 PM": "l4" },
+          "80 Area": { "80 AM": "c4", "80 PM": "c1", "81": "c3", "8 AM": "l3", "8 MID": "l4", "8 PM": "l5" },
+          "Base": { "Base AM 1": "c1", "Base AM 2": "c2", "Base MID 1": "c3", "Base MID 2": "c4", "Base PM": "c5", "Base Lead AM": "l5", "Base Lead PM": "l6" },
+          "Deployment": { 
+            "Deploy AM": "c6", 
+            "Deploy MID 1": "c1", 
+            "Deploy MID 2": "c3", 
+            "Deploy PM": "c4", 
+            "Event Coordinator": "c2", 
+            "Event Leader": "" 
+          }
+        };
+      });
+    }
 
-      // 2. Load Leaders Database
-      const storedLeads = localStorage.getItem(STORAGE_KEY_LEADS);
-      LEADERS_ROSTER = storedLeads ? JSON.parse(storedLeads) : [...DEFAULT_LEADERS];
+    async function loadAllData() {
+      try {
+        const res = await fetch(GOOGLE_SHEET_API);
+        const data = await res.json();
 
-      // 3. Load Schedules
-      const storedSchedule = localStorage.getItem(STORAGE_KEY_SCHEDULE);
-      if (storedSchedule) {
-        schedule = JSON.parse(storedSchedule);
+        if (data && data.schedule && data.coords && data.leads) {
+          COORDINATORS_ROSTER = data.coords;
+          LEADERS_ROSTER = data.leads;
+          schedule = data.schedule;
+          // Store local fallback
+          localStorage.setItem(STORAGE_BACKUP_KEY, JSON.stringify(data));
+          return;
+        }
+      } catch (err) {
+        console.warn("Could not reach Google Sheets, checking local storage backup...", err);
+      }
+
+      // Check local storage backup if Google Sheets was unreachable or empty
+      const localBackup = localStorage.getItem(STORAGE_BACKUP_KEY);
+      if (localBackup) {
+        const data = JSON.parse(localBackup);
+        COORDINATORS_ROSTER = data.coords || [...DEFAULT_COORDINATORS];
+        LEADERS_ROSTER = data.leads || [...DEFAULT_LEADERS];
+        schedule = data.schedule || {};
       } else {
-        schedule = {};
-        DAYS.forEach(day => {
-          schedule[day] = {
-            "50 Area": { "50 AM": "c1", "50 PM": "c2", "51": "c4", "5 AM": "l1", "5 MID": "l2", "5 PM": "l3" },
-            "60 Area": { "60 AM": "c2", "60 PM": "c3", "61": "c4", "CYM": "c5", "8 AM": "l2", "8 MID": "l3", "8 PM": "l4" },
-            "80 Area": { "80 AM": "c4", "80 PM": "c1", "81": "c3", "8 AM": "l3", "8 MID": "l4", "8 PM": "l5" },
-            "Base": { "Base AM 1": "c1", "Base AM 2": "c2", "Base MID 1": "c3", "Base MID 2": "c4", "Base PM": "c5", "Base AM": "l5", "Base PM": "l6" },
-            "Deployment": { 
-              "Deploy AM": "c6", 
-              "Deploy MID 1": "c1", 
-              "Deploy MID 2": "c3", 
-              "Deploy PM": "c4", 
-              "Event Coordinator": "c2", 
-              "Event Leader": "" 
-            }
-          };
-        });
+        // First run seed
+        COORDINATORS_ROSTER = [...DEFAULT_COORDINATORS];
+        LEADERS_ROSTER = [...DEFAULT_LEADERS];
+        seedDefaultSchedule();
       }
     }
 
-    function saveAllData() {
-      localStorage.setItem(STORAGE_KEY_COORDS, JSON.stringify(COORDINATORS_ROSTER));
-      localStorage.setItem(STORAGE_KEY_LEADS, JSON.stringify(LEADERS_ROSTER));
-      localStorage.setItem(STORAGE_KEY_SCHEDULE, JSON.stringify(schedule));
+    async function saveAllData() {
+      const payload = {
+        coords: COORDINATORS_ROSTER,
+        leads: LEADERS_ROSTER,
+        schedule: schedule
+      };
+
+      // Always save local backup
+      localStorage.setItem(STORAGE_BACKUP_KEY, JSON.stringify(payload));
+
+      const saveBtn = document.getElementById("saveSetupBtn");
+      saveBtn.disabled = true;
+      saveBtn.textContent = "Saving to Google Sheet...";
+
+      try {
+        await fetch(GOOGLE_SHEET_API, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        });
+        saveBtn.textContent = "Saved Successfully!";
+        setTimeout(() => {
+          saveBtn.disabled = false;
+          saveBtn.textContent = "Save & Apply Changes";
+          document.getElementById("setupModal").classList.remove("open");
+          startCycle();
+        }, 600);
+      } catch (err) {
+        console.error("Save to Google Sheet failed:", err);
+        alert("Saved to local backup, but could not reach Google Sheet. Check internet connection.");
+        saveBtn.disabled = false;
+        saveBtn.textContent = "Save & Apply Changes";
+        document.getElementById("setupModal").classList.remove("open");
+        startCycle();
+      }
     }
 
     function getToday() {
@@ -623,13 +677,19 @@
       return COORDINATORS_ROSTER.find(p => p.id === id) || LEADERS_ROSTER.find(p => p.id === id);
     }
 
+    function normalizeSlot(item) {
+      if (typeof item === "string") return { key: item, label: item };
+      return item;
+    }
+
     function buildGridHTML(type, slots, activeAssignments) {
       if (!slots || slots.length === 0) return "";
-      const gridClass = getGridClass(slots.length);
+      const normalized = slots.map(normalizeSlot);
+      const gridClass = getGridClass(normalized.length);
       const badgeClass = type;
 
-      const cardsHTML = slots.map(slot => {
-        const personId = activeAssignments[slot];
+      const cardsHTML = normalized.map(item => {
+        const personId = activeAssignments[item.key];
         const person = findPerson(personId);
         const nameText = person ? person.name : "Unassigned";
         const unassignedClass = person ? "" : "unassigned";
@@ -637,7 +697,7 @@
 
         return `
           <div class="slot-card">
-            <div class="slot-badge ${badgeClass}">${slot}</div>
+            <div class="slot-badge ${badgeClass}">${item.label}</div>
             <img class="slot-avatar" ${imgStyle}>
             <div class="slot-name ${unassignedClass}">${nameText}</div>
           </div>
@@ -681,9 +741,8 @@
         }
         if (config.optionalEvents && config.optionalEvents.length > 0) {
           const activeEventSlots = config.optionalEvents
-            .map(e => e.slot)
-            .filter(slot => {
-              const assignedId = dayAreaAssignments[slot];
+            .filter(e => {
+              const assignedId = dayAreaAssignments[e.key];
               return assignedId && assignedId.trim() !== "";
             });
 
@@ -730,16 +789,16 @@
       const dayAreaAssignments = (schedule[setupSelectedDay] && schedule[setupSelectedDay][setupSelectedArea]) || {};
 
       function buildSlotRows(slots, pool, labelColor) {
-        return slots.map(slot => {
-          const currentVal = dayAreaAssignments[slot] || "";
+        return slots.map(normalizeSlot).map(item => {
+          const currentVal = dayAreaAssignments[item.key] || "";
           const options = [`<option value="">-- Unassigned --</option>`].concat(
             pool.map(m => `<option value="${m.id}" ${m.id === currentVal ? "selected" : ""}>${m.name}</option>`)
           ).join("");
 
           return `
             <div class="assignment-row">
-              <div class="assignment-label" style="color:${labelColor};">${slot}</div>
-              <select class="assignment-select" data-slot="${slot}">${options}</select>
+              <div class="assignment-label" style="color:${labelColor};">${item.label}</div>
+              <select class="assignment-select" data-slot="${item.key}">${options}</select>
             </div>
           `;
         }).join("");
@@ -747,11 +806,11 @@
 
       let modalHTML = "";
       if (config.coordinators && config.coordinators.length) {
-        modalHTML += `<div style="font-size:1.3rem; font-weight:800; color:var(--coord-color); margin-top:8px;">Coordinators (Filtered to Coord Pool)</div>`;
+        modalHTML += `<div style="font-size:1.3rem; font-weight:800; color:var(--coord-color); margin-top:8px;">Coordinators</div>`;
         modalHTML += buildSlotRows(config.coordinators, COORDINATORS_ROSTER, "var(--coord-color)");
       }
       if (config.leaders && config.leaders.length) {
-        modalHTML += `<div style="font-size:1.3rem; font-weight:800; color:var(--lead-color); margin-top:8px;">Leaders (Filtered to Leader Pool)</div>`;
+        modalHTML += `<div style="font-size:1.3rem; font-weight:800; color:var(--lead-color); margin-top:8px;">Leaders</div>`;
         modalHTML += buildSlotRows(config.leaders, LEADERS_ROSTER, "var(--lead-color)");
       }
       if (config.optionalEvents && config.optionalEvents.length) {
@@ -759,16 +818,15 @@
         config.optionalEvents.forEach(evt => {
           const pool = evt.type === "coord" ? COORDINATORS_ROSTER : LEADERS_ROSTER;
           const labelColor = evt.type === "coord" ? "var(--coord-color)" : "var(--lead-color)";
-          modalHTML += buildSlotRows([evt.slot], pool, labelColor);
+          modalHTML += buildSlotRows([evt], pool, labelColor);
         });
       }
 
       container.innerHTML = modalHTML;
     }
 
-    // Render Roster Editor for both pools
     function renderRosterLists() {
-      // 1. Coordinators List
+      // 1. Coordinators
       const coordContainer = document.getElementById("coordList");
       coordContainer.innerHTML = "";
       COORDINATORS_ROSTER.forEach(person => {
@@ -789,7 +847,7 @@
         coordContainer.appendChild(row);
       });
 
-      // 2. Leaders List
+      // 2. Leaders
       const leadContainer = document.getElementById("leadList");
       leadContainer.innerHTML = "";
       LEADERS_ROSTER.forEach(person => {
@@ -898,18 +956,28 @@
       });
 
       saveAllData();
-      document.getElementById("setupModal").classList.remove("open");
-      startCycle();
     });
 
     document.getElementById("closeSetupBtn").addEventListener("click", () => {
-      loadAllData();
-      document.getElementById("setupModal").classList.remove("open");
-      startCycle();
+      loadAllData().then(() => {
+        document.getElementById("setupModal").classList.remove("open");
+        startCycle();
+      });
     });
 
-    loadAllData();
-    startCycle();
+    // Auto-poll Google Sheets every 30 seconds
+    setInterval(async () => {
+      const isModalOpen = document.getElementById("setupModal").classList.contains("open");
+      if (!isModalOpen) {
+        await loadAllData();
+        renderDisplay(currentAreaIndex);
+      }
+    }, 30000);
+
+    // Initial Launch
+    loadAllData().then(() => {
+      startCycle();
+    });
   </script>
 </body>
 </html>
