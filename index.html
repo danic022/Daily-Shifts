@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dynamic Lineup Display</title>
+  <title>Shift & Area Display Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
@@ -14,22 +14,22 @@
       overflow: hidden;
     }
 
-    /* 3D Stage for Perspective Animations */
+    /* 3D Stage for Card Transitions */
     .perspective-stage {
       perspective: 1200px;
     }
 
-    /* Tile Entry & Exit Animations */
+    /* Tile Animations */
     .tile-card {
-      transition: all 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transition: all 0.65s cubic-bezier(0.34, 1.56, 0.64, 1);
       transform-origin: center center;
       backface-visibility: hidden;
     }
 
-    /* Entering animation: scale up + slide upward + subtle 3D tilt */
+    /* Entrance Transition */
     .tile-enter {
       opacity: 0;
-      transform: translateY(40px) scale(0.85) rotateX(15deg);
+      transform: translateY(40px) scale(0.88) rotateX(12deg);
     }
 
     .tile-active {
@@ -37,13 +37,13 @@
       transform: translateY(0) scale(1) rotateX(0deg);
     }
 
-    /* Exiting animation: scale down + slide downward + tilt away */
+    /* Exit Transition */
     .tile-exit {
       opacity: 0;
-      transform: translateY(-40px) scale(0.85) rotateX(-15deg);
+      transform: translateY(-40px) scale(0.88) rotateX(-12deg);
     }
 
-    /* Image zoom effect on card container */
+    /* Ambient Zoom on Hover */
     .tile-card:hover .tile-bg-photo {
       transform: scale(1.08);
     }
@@ -52,7 +52,7 @@
       transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    /* Custom Scrollbar for Settings Modal */
+    /* Custom Scrollbar */
     ::-webkit-scrollbar {
       width: 6px;
     }
@@ -73,23 +73,23 @@
       <div class="flex items-center gap-3">
         <span class="inline-block w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></span>
         <h1 id="area-title" class="text-4xl font-extrabold tracking-tight text-white drop-shadow-md">
-          Main Stage
+          Main Hall
         </h1>
       </div>
       <p id="area-subtitle" class="text-slate-400 text-lg font-medium mt-1">
-        Current & Upcoming Lineup
+        Current Shift Roster & Staff Assignments
       </p>
     </div>
 
     <div class="flex items-center gap-4">
-      <!-- Live Indicator / Timer -->
-      <div class="bg-slate-900/80 border border-slate-800 backdrop-blur-md px-5 py-2.5 rounded-2xl flex items-center gap-3 shadow-lg">
+      <!-- Live Area Countdown Indicator -->
+      <div class="bg-slate-900/90 border border-slate-800 backdrop-blur-md px-5 py-2.5 rounded-2xl flex items-center gap-3 shadow-lg">
         <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Next Area In</span>
         <span id="timer-display" class="font-mono text-xl font-bold text-indigo-400">10s</span>
       </div>
 
-      <!-- Settings Button -->
-      <button id="open-settings" class="p-3 bg-slate-900/80 hover:bg-slate-800 border border-slate-800 rounded-2xl text-slate-300 hover:text-white transition-all shadow-lg active:scale-95">
+      <!-- Settings Trigger Button -->
+      <button id="open-settings" class="p-3 bg-slate-900/90 hover:bg-slate-800 border border-slate-800 rounded-2xl text-slate-300 hover:text-white transition-all shadow-lg active:scale-95">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -98,32 +98,32 @@
     </div>
   </header>
 
-  <!-- MAIN TILES CONTAINER (EXPANDED PHOTO CARDS) -->
+  <!-- MAIN TILES CONTAINER -->
   <main class="flex-1 perspective-stage flex items-center justify-center py-2">
     <div id="tiles-container" class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full h-full max-h-[720px]">
-      <!-- Tiles dynamically injected here -->
+      <!-- Cards rendered here dynamically -->
     </div>
   </main>
 
-  <!-- FOOTER NAVIGATION / AREA INDICATORS -->
+  <!-- FOOTER NAVIGATION & AREA DOTS -->
   <footer class="flex justify-between items-center z-10 pt-4">
     <div id="area-dots" class="flex items-center gap-3">
-      <!-- Dynamic dots for current active area -->
+      <!-- Area indicators populated by JS -->
     </div>
 
     <div class="text-xs font-semibold text-slate-500 uppercase tracking-widest">
-      Automated Display Node #04
+      Shift Lineup Display System
     </div>
   </footer>
 
   <!-- SETTINGS MODAL -->
-  <div id="settings-modal" class="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 opacity-0 pointer-events-none transition-opacity duration-300">
+  <div id="settings-modal" class="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center z-50 opacity-0 pointer-events-none transition-opacity duration-300">
     <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8 max-w-md w-full shadow-2xl transform scale-95 transition-transform duration-300" id="settings-card">
       <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-3">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
         </svg>
-        Display Settings
+        Display Options
       </h2>
 
       <div class="space-y-6">
@@ -142,15 +142,13 @@
           </div>
         </div>
 
-        <!-- Animation Style Info -->
         <div class="p-4 bg-slate-800/50 border border-slate-700/50 rounded-2xl">
           <p class="text-xs text-slate-400 leading-relaxed">
-            <strong class="text-slate-200">Enhanced Photo Mode:</strong> Tiles automatically scale up to fill space, utilizing high-contrast photo overlays and staggered 3D entering & exiting transitions.
+            <strong class="text-slate-200">Shift View Active:</strong> Displays Leader, Coordinator, and Team Member details with photo background focus and dynamic entrance animations.
           </p>
         </div>
       </div>
 
-      <!-- Action Buttons -->
       <div class="mt-8 flex gap-3">
         <button id="close-settings" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-600/30 active:scale-95">
           Save & Apply
@@ -160,97 +158,115 @@
   </div>
 
   <script>
-    // Sample Data for Display Areas and Performers
+    // Shift Data with Leaders, Coordinators, and Staff
     const displayAreas = [
       {
-        id: "main-stage",
-        title: "Main Stage",
-        subtitle: "Headliners & Evening Performances",
+        id: "main-hall",
+        title: "Main Hall",
+        subtitle: "Morning Shift • Operational Operations",
         items: [
           {
-            name: "Aura & The Echoes",
-            role: "Live Set • Electronic Synth",
-            time: "08:00 PM - 09:30 PM",
-            image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1000&q=80",
-            status: "NEXT UP"
-          },
-          {
-            name: "Neon Horizon",
-            role: "Headliner • Cyber-Pop",
-            time: "10:00 PM - 11:45 PM",
-            image: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=1000&q=80",
-            status: "FEATURED"
-          },
-          {
-            name: "Solaris Duo",
-            role: "Closing Set • Ambient Beats",
-            time: "12:00 AM - 01:30 AM",
-            image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=1000&q=80",
-            status: "LATE NIGHT"
-          }
-        ]
-      },
-      {
-        id: "acoustic-lounge",
-        title: "Acoustic Lounge",
-        subtitle: "Intimate Unplugged Sessions",
-        items: [
-          {
-            name: "Elena Rostova",
-            role: "Solo Cello & Vocals",
-            time: "07:30 PM - 08:30 PM",
-            image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=1000&q=80",
-            status: "LIVE NOW"
-          },
-          {
-            name: "The Timber Collective",
-            role: "Folk & Acoustic Quartet",
-            time: "09:00 PM - 10:15 PM",
-            image: "https://images.unsplash.com/photo-1465847899084-d164df4dedc6?auto=format&fit=crop&w=1000&q=80",
-            status: "NEXT UP"
+            name: "Sarah Jenkins",
+            role: "Shift Leader",
+            shiftTime: "07:00 AM - 03:30 PM",
+            coordinator: "David Miller",
+            team: "Team Alpha (8 Members)",
+            image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=1000&q=80",
+            status: "ON DUTY"
           },
           {
             name: "Marcus Vance",
-            role: "Classical Guitar",
-            time: "10:45 PM - 11:30 PM",
-            image: "https://images.unsplash.com/photo-1510915361894-db8b60106cb1?auto=format&fit=crop&w=1000&q=80",
-            status: "UPCOMING"
+            role: "Floor Coordinator",
+            shiftTime: "07:00 AM - 03:30 PM",
+            coordinator: "Sarah Jenkins",
+            team: "Logistics & Support",
+            image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=1000&q=80",
+            status: "ACTIVE"
+          },
+          {
+            name: "Elena Rostova",
+            role: "Safety & Quality Lead",
+            shiftTime: "08:00 AM - 04:30 PM",
+            coordinator: "Sarah Jenkins",
+            team: "Inspection Crew B",
+            image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=1000&q=80",
+            status: "ON SITE"
           }
         ]
       },
       {
-        id: "club-dome",
-        title: "The Dynamic Dome",
-        subtitle: "High Energy Visuals & Bass",
+        id: "logistics-hub",
+        title: "Logistics Hub",
+        subtitle: "Inbound & Outbound Dispatch",
         items: [
           {
-            name: "KAIRO",
-            role: "Deep House & Techno",
-            time: "09:00 PM - 11:00 PM",
-            image: "https://images.unsplash.com/photo-1574391884720-bbc3740c59d1?auto=format&fit=crop&w=1000&q=80",
-            status: "LIVE NOW"
+            name: "Alex Rivera",
+            role: "Shift Leader",
+            shiftTime: "06:00 AM - 02:30 PM",
+            coordinator: "Rachel Green",
+            team: "Dock Operations",
+            image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=1000&q=80",
+            status: "ON DUTY"
           },
           {
-            name: "Valkyrie",
-            role: "Drum & Bass Showcase",
-            time: "11:00 PM - 01:00 AM",
-            image: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&w=1000&q=80",
-            status: "NEXT UP"
+            name: "Jessica Chen",
+            role: "Inventory Coordinator",
+            shiftTime: "07:00 AM - 03:30 PM",
+            coordinator: "Alex Rivera",
+            team: "Warehouse Team 3",
+            image: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=1000&q=80",
+            status: "ACTIVE"
           },
           {
-            name: "SubZero",
-            role: "Dubstep / Visual Experience",
-            time: "01:00 AM - 03:00 AM",
-            image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1000&q=80",
-            status: "LATE NIGHT"
+            name: "James Wilson",
+            role: "Transport Specialist",
+            shiftTime: "08:00 AM - 04:30 PM",
+            coordinator: "Alex Rivera",
+            team: "Fleet Dispatch",
+            image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=1000&q=80",
+            status: "ON ROUTE"
+          }
+        ]
+      },
+      {
+        id: "control-center",
+        title: "Control Center",
+        subtitle: "Monitoring & Technical Support",
+        items: [
+          {
+            name: "David Kim",
+            role: "Systems Lead",
+            shiftTime: "08:00 AM - 05:00 PM",
+            coordinator: "Amanda Lewis",
+            team: "Network Reliability",
+            image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=1000&q=80",
+            status: "ON DUTY"
+          },
+          {
+            name: "Taylor Swift",
+            role: "Incident Coordinator",
+            shiftTime: "08:00 AM - 05:00 PM",
+            coordinator: "David Kim",
+            team: "Response Team Alpha",
+            image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=1000&q=80",
+            status: "STANDBY"
+          },
+          {
+            name: "Robert Taylor",
+            role: "Security Supervisor",
+            shiftTime: "07:00 AM - 04:00 PM",
+            coordinator: "David Kim",
+            team: "Facility Security",
+            image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=1000&q=80",
+            status: "ACTIVE"
           }
         ]
       }
     ];
 
-    // State Variables
+    // State
     let currentAreaIndex = 0;
-    let transitionDelay = 10; // in seconds
+    let transitionDelay = 10;
     let secondsRemaining = transitionDelay;
     let timerInterval = null;
 
@@ -271,64 +287,76 @@
 
     // Render Navigation Dots
     function renderDots() {
-      areaDotsContainer.innerHTML = displayAreas.map((area, idx) => `
-        <div class="flex items-center gap-2">
-          <div class="h-2.5 rounded-full transition-all duration-500 ${idx === currentAreaIndex ? 'w-8 bg-indigo-500' : 'w-2.5 bg-slate-800'}"></div>
-        </div>
+      areaDotsContainer.innerHTML = displayAreas.map((_, idx) => `
+        <div class="h-2.5 rounded-full transition-all duration-500 ${idx === currentAreaIndex ? 'w-8 bg-indigo-500' : 'w-2.5 bg-slate-800'}"></div>
       `).join('');
     }
 
-    // Render Tiles with Enhanced Visual Focus and Animation Classes
+    // Render Area Cards (Full Photo Focus + Restored Shift Meta)
     function renderArea(index) {
       const area = displayAreas[index];
       areaTitle.textContent = area.title;
       areaSubtitle.textContent = area.subtitle;
       renderDots();
 
-      // Clear existing content
       tilesContainer.innerHTML = '';
 
-      // Generate Card HTML with Edge-to-Edge Photo Focus
       area.items.forEach((item, idx) => {
         const tile = document.createElement('div');
-        tile.className = `tile-card tile-enter relative rounded-3xl overflow-hidden border border-slate-800/80 bg-slate-900 shadow-2xl flex flex-col justify-end group cursor-pointer`;
-        tile.style.transitionDelay = `${idx * 120}ms`; // Staggered entry animation delay
+        tile.className = `tile-card tile-enter relative rounded-3xl overflow-hidden border border-slate-800/80 bg-slate-900 shadow-2xl flex flex-col justify-between group cursor-pointer p-6`;
+        tile.style.transitionDelay = `${idx * 120}ms`;
 
         tile.innerHTML = `
-          <!-- Full Card Background Image -->
+          <!-- Photo Background with Gradient -->
           <div class="absolute inset-0 z-0 overflow-hidden">
-            <img src="${item.image}" alt="${item.name}" class="tile-bg-photo w-full h-full object-cover object-center filter brightness-90 contrast-105">
-            <!-- Gradient Overlay for Contrast & Text Legibility -->
-            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
+            <img src="${item.image}" alt="${item.name}" class="tile-bg-photo w-full h-full object-cover object-center filter brightness-[0.85] contrast-105">
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-slate-950/20"></div>
           </div>
 
-          <!-- Top Badge / Status -->
-          <div class="absolute top-5 left-5 z-10 flex gap-2">
-            <span class="px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-slate-950/60 backdrop-blur-md border border-white/10 text-indigo-300 shadow-md">
+          <!-- Top Status Badge & Role -->
+          <div class="relative z-10 flex justify-between items-start">
+            <span class="px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-indigo-600/80 backdrop-blur-md border border-indigo-400/30 text-white shadow-md">
+              ${item.role}
+            </span>
+            <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-slate-950/60 backdrop-blur-md border border-white/10 text-emerald-400 shadow-md">
               ${item.status}
             </span>
           </div>
 
-          <!-- Bottom Card Content -->
-          <div class="relative z-10 p-6 flex flex-col justify-end">
-            <span class="text-sm font-semibold text-indigo-400 mb-1 flex items-center gap-1.5">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              ${item.time}
-            </span>
-            <h3 class="text-2xl font-extrabold text-white tracking-tight leading-tight group-hover:text-indigo-200 transition-colors">
+          <!-- Restored Shift & Leader Details (Bottom Area) -->
+          <div class="relative z-10 mt-auto">
+            <h3 class="text-3xl font-extrabold text-white tracking-tight leading-tight mb-2">
               ${item.name}
             </h3>
-            <p class="text-sm font-medium text-slate-300/90 mt-1">
-              ${item.role}
-            </p>
+
+            <!-- Shift Details Grid -->
+            <div class="space-y-1.5 pt-3 border-t border-white/15">
+              <div class="flex items-center gap-2 text-xs font-medium text-slate-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-indigo-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span><strong>Shift:</strong> ${item.shiftTime}</span>
+              </div>
+
+              <div class="flex items-center gap-2 text-xs font-medium text-slate-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-indigo-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <span><strong>Coordinator:</strong> ${item.coordinator}</span>
+              </div>
+
+              <div class="flex items-center gap-2 text-xs font-medium text-slate-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-indigo-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <span><strong>Team:</strong> ${item.team}</span>
+              </div>
+            </div>
           </div>
         `;
 
         tilesContainer.appendChild(tile);
 
-        // Trigger entrance transition on next frame
         requestAnimationFrame(() => {
           setTimeout(() => {
             tile.classList.remove('tile-enter');
@@ -338,11 +366,10 @@
       });
     }
 
-    // Transition to Next Area with Smooth Exit Animation
+    // Next Area Transition
     function nextArea() {
       const activeTiles = tilesContainer.querySelectorAll('.tile-card');
       
-      // Apply exit animations with reverse staggering
       activeTiles.forEach((tile, idx) => {
         setTimeout(() => {
           tile.classList.remove('tile-active');
@@ -350,15 +377,14 @@
         }, (activeTiles.length - 1 - idx) * 80);
       });
 
-      // Wait for exit animation to complete before rendering new area
       setTimeout(() => {
         currentAreaIndex = (currentAreaIndex + 1) % displayAreas.length;
         renderArea(currentAreaIndex);
         resetTimer();
-      }, 600);
+      }, 550);
     }
 
-    // Timer Logic
+    // Timer Controls
     function startTimer() {
       clearInterval(timerInterval);
       timerInterval = setInterval(() => {
@@ -376,7 +402,7 @@
       timerDisplay.textContent = `${secondsRemaining}s`;
     }
 
-    // Settings Modal Controllers
+    // Settings Modal
     openSettingsBtn.addEventListener('click', () => {
       settingsModal.classList.remove('opacity-0', 'pointer-events-none');
       settingsCard.classList.remove('scale-95');
@@ -384,11 +410,9 @@
     });
 
     closeSettingsBtn.addEventListener('click', () => {
-      // Save setting value
       transitionDelay = parseInt(transitionSlider.value, 10);
       resetTimer();
 
-      // Close modal
       settingsModal.classList.add('opacity-0', 'pointer-events-none');
       settingsCard.classList.remove('scale-100');
       settingsCard.classList.add('scale-95');
@@ -398,7 +422,7 @@
       sliderValueDisplay.textContent = `${e.target.value} seconds`;
     });
 
-    // Initialize Page
+    // Init
     renderArea(currentAreaIndex);
     startTimer();
   </script>
